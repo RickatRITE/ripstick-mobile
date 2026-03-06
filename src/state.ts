@@ -24,6 +24,8 @@ export interface NoteListItem {
   date: string;
   /** Frontmatter title, fetched asynchronously */
   title?: string;
+  /** Frontmatter updated timestamp, fetched asynchronously */
+  updated?: string;
 }
 
 export interface AppState {

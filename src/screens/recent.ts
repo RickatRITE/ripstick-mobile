@@ -14,7 +14,7 @@ export function renderRecent(app: HTMLElement): void {
           <span class="tab active">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v9</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v10</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -108,17 +108,22 @@ async function fetchTitles(token: string): Promise<void> {
       try {
         const { content } = await getFileContent(token, state.repo, note.path);
         const parsed = parseNote(content);
-        if (parsed.title) {
-          note.title = parsed.title;
-          // Update DOM directly to avoid full re-render flicker
-          const el = document.querySelector(`[data-title-path="${note.path}"]`);
-          if (el) el.textContent = parsed.title;
-        }
+        if (parsed.title) note.title = parsed.title;
+        if (parsed.updated) note.updated = parsed.updated;
       } catch {
         // Silently skip — filename stays as fallback
       }
     }));
   }
+
+  // Re-sort by updated timestamp (matches desktop sort order) and re-render
+  state.recentNotes.sort((a, b) => {
+    const aKey = a.updated || a.date;
+    const bKey = b.updated || b.date;
+    return bKey.localeCompare(aKey);
+  });
+
+  if (state.screen === 'recent') render();
 }
 
 async function openNote(path: string): Promise<void> {
