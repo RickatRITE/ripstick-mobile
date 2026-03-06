@@ -30,6 +30,7 @@ body {
   max-width: 480px;
   margin: 0 auto;
   padding: 16px;
+  padding-bottom: 0;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -40,7 +41,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .header h1 {
@@ -147,10 +148,11 @@ input:focus, textarea:focus, select:focus {
 }
 
 textarea {
-  min-height: 120px;
-  resize: vertical;
+  resize: none;
   font-family: inherit;
   line-height: 1.5;
+  flex: 1;
+  min-height: 80px;
 }
 
 /* Capture screen */
@@ -158,30 +160,54 @@ textarea {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+}
+
+.body-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 6px;
 }
 
 .group-picker {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .group-chip {
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 16px;
   font-size: 13px;
   border: 1px solid var(--border);
   background: var(--bg-card);
+  color: var(--fg);
   cursor: pointer;
   transition: all 0.15s;
   -webkit-tap-highlight-color: transparent;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .group-chip.active {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+.marker-toggle {
+  font-size: 13px;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 4px 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.marker-toggle:hover {
+  color: var(--fg);
 }
 
 .marker-picker {
@@ -196,6 +222,7 @@ textarea {
   font-size: 12px;
   border: 1px solid var(--border);
   background: var(--bg-card);
+  color: var(--fg);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -207,8 +234,8 @@ textarea {
 }
 
 .form-footer {
-  margin-top: auto;
-  padding: 16px 0;
+  padding: 12px 0;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
 .status-message {
@@ -234,7 +261,7 @@ textarea {
 
 /* Settings link */
 .settings-link {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--fg-muted);
   text-decoration: none;
   cursor: pointer;
@@ -242,4 +269,22 @@ textarea {
 
 .settings-link:hover {
   color: var(--fg);
+}
+
+/* Title input - lighter weight for capture */
+.title-input {
+  border: none;
+  background: transparent;
+  font-size: 17px;
+  font-weight: 500;
+  padding: 8px 0;
+  color: var(--fg);
+}
+
+.title-input::placeholder {
+  color: var(--fg-muted);
+}
+
+.title-input:focus {
+  border-color: transparent;
 }

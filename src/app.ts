@@ -5,6 +5,8 @@ import './style.css';
 
 // ── State ──────────────────────────────────────────────────────────────
 
+const LAST_GROUP_KEY = 'ripstick-last-group';
+
 interface AppState {
   screen: 'auth' | 'capture';
   username: string;
@@ -14,6 +16,7 @@ interface AppState {
   title: string;
   body: string;
   marker: MarkerType | '';
+  markerExpanded: boolean;
   saving: boolean;
   status: { type: 'success' | 'error' | 'info'; message: string } | null;
 }
@@ -23,10 +26,11 @@ const state: AppState = {
   username: '',
   repo: '',
   groups: [],
-  selectedGroup: 'general',
+  selectedGroup: localStorage.getItem(LAST_GROUP_KEY) || 'general',
   title: '',
   body: '',
   marker: '',
+  markerExpanded: false,
   saving: false,
   status: null,
 };
@@ -39,6 +43,11 @@ const MARKERS: Array<{ type: MarkerType; icon: string; label: string }> = [
   { type: 'reference', icon: '📎', label: 'Reference' },
   { type: 'followup', icon: '🔄', label: 'Follow-up' },
 ];
+
+function defaultTitle(): string {
+  const now = new Date();
+  return now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' — Quick note';
+}
 
 // ── Init ───────────────────────────────────────────────────────────────
 
@@ -55,6 +64,7 @@ async function init() {
       if (state.groups.length > 0 && !state.groups.includes(state.selectedGroup)) {
         state.selectedGroup = state.groups[0];
       }
+      state.title = defaultTitle();
       state.screen = 'capture';
     } catch {
       state.screen = 'auth';
@@ -97,43 +107,42 @@ function renderAuth() {
 
 function renderCapture() {
   const token = getToken()!;
+
+  const markerLabel = state.marker
+    ? MARKERS.find((m) => m.type === state.marker)!
+    : null;
+
   app.innerHTML = `
     <div class="capture-screen">
       <div class="header">
         <h1>New Note</h1>
         <div class="header-actions">
-          <span class="settings-link" id="disconnect-btn">Disconnect</span>
+          <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
 
-      <div class="input-group">
-        <label>Group</label>
-        <div class="group-picker">
-          ${state.groups.map((g) => `
-            <button class="group-chip ${g === state.selectedGroup ? 'active' : ''}" data-group="${g}">${g}</button>
-          `).join('')}
-        </div>
+      <div class="group-picker">
+        ${state.groups.map((g) => `
+          <button class="group-chip ${g === state.selectedGroup ? 'active' : ''}" data-group="${g}">${g}</button>
+        `).join('')}
       </div>
 
-      <div class="input-group">
-        <label>Title</label>
-        <input type="text" id="title-input" value="${escapeHtml(state.title)}" placeholder="Note title..." />
-      </div>
+      <input type="text" class="title-input" id="title-input" value="${escapeHtml(state.title)}" placeholder="Note title..." />
 
-      <div class="input-group">
-        <label>Body</label>
+      <div class="body-group">
         <textarea id="body-input" placeholder="Write your note...">${escapeHtml(state.body)}</textarea>
       </div>
 
-      <div class="input-group">
-        <label>Marker (optional)</label>
+      ${state.markerExpanded ? `
         <div class="marker-picker">
           <button class="marker-chip ${state.marker === '' ? 'active' : ''}" data-marker="">None</button>
           ${MARKERS.map((m) => `
             <button class="marker-chip ${m.type === state.marker ? 'active' : ''}" data-marker="${m.type}">${m.icon} ${m.label}</button>
           `).join('')}
         </div>
-      </div>
+      ` : `
+        <span class="marker-toggle" id="marker-toggle">${markerLabel ? `${markerLabel.icon} ${markerLabel.label} ✕` : '+ Add marker'}</span>
+      `}
 
       <div class="form-footer">
         ${state.status ? `<div class="status-message status-${state.status.type}" style="margin-bottom: 8px">${state.status.message}</div>` : ''}
@@ -145,21 +154,36 @@ function renderCapture() {
   `;
 
   // Event listeners
-  document.getElementById('disconnect-btn')!.addEventListener('click', handleDisconnect);
+  document.getElementById('signout-btn')!.addEventListener('click', handleDisconnect);
 
   document.querySelectorAll('.group-chip').forEach((el) => {
     el.addEventListener('click', () => {
       state.selectedGroup = (el as HTMLElement).dataset.group!;
+      localStorage.setItem(LAST_GROUP_KEY, state.selectedGroup);
       render();
     });
   });
 
-  document.querySelectorAll('.marker-chip').forEach((el) => {
-    el.addEventListener('click', () => {
-      state.marker = ((el as HTMLElement).dataset.marker || '') as MarkerType | '';
-      render();
+  if (state.markerExpanded) {
+    document.querySelectorAll('.marker-chip').forEach((el) => {
+      el.addEventListener('click', () => {
+        state.marker = ((el as HTMLElement).dataset.marker || '') as MarkerType | '';
+        state.markerExpanded = false;
+        render();
+      });
     });
-  });
+  } else {
+    document.getElementById('marker-toggle')?.addEventListener('click', () => {
+      if (state.marker) {
+        // Tapping the active marker label clears it
+        state.marker = '';
+        render();
+      } else {
+        state.markerExpanded = true;
+        render();
+      }
+    });
+  }
 
   document.getElementById('title-input')!.addEventListener('input', (e) => {
     state.title = (e.target as HTMLInputElement).value;
@@ -209,6 +233,7 @@ async function handleConnect() {
     if (state.groups.length > 0 && !state.groups.includes(state.selectedGroup)) {
       state.selectedGroup = state.groups[0];
     }
+    state.title = defaultTitle();
     state.screen = 'capture';
     state.status = null;
   } catch (e) {
@@ -261,10 +286,11 @@ async function handleSave(token: string) {
 
     await createNote(token, state.repo, state.selectedGroup, filename, content, commitMessage);
 
-    state.status = { type: 'success', message: `Saved: ${state.selectedGroup}/${filename}` };
-    state.title = '';
+    state.status = { type: 'success', message: `Saved to ${state.selectedGroup}` };
+    state.title = defaultTitle();
     state.body = '';
     state.marker = '';
+    state.markerExpanded = false;
   } catch (e) {
     state.status = { type: 'error', message: `Save failed: ${e}` };
   }
