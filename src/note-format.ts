@@ -3,6 +3,20 @@
 const MARKER_TYPES = ['todo', 'idea', 'question', 'important', 'reference', 'followup'] as const;
 export type MarkerType = (typeof MARKER_TYPES)[number];
 
+export const MARKERS: ReadonlyArray<{ type: MarkerType; icon: string; label: string }> = [
+  { type: 'todo', icon: '✅', label: 'Todo' },
+  { type: 'idea', icon: '💡', label: 'Idea' },
+  { type: 'question', icon: '❓', label: 'Question' },
+  { type: 'important', icon: '⚠️', label: 'Important' },
+  { type: 'reference', icon: '📎', label: 'Reference' },
+  { type: 'followup', icon: '🔄', label: 'Follow-up' },
+];
+
+export const MARKER_MAP = Object.fromEntries(MARKERS.map((m) => [m.type, m])) as Record<
+  MarkerType,
+  (typeof MARKERS)[number]
+>;
+
 export interface NoteFields {
   group: string;
   title: string;
@@ -10,13 +24,18 @@ export interface NoteFields {
   marker?: MarkerType;
 }
 
+/** Quote a string for YAML double-quoted scalar. */
+export function yamlQuote(s: string): string {
+  return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t') + '"';
+}
+
 /** Build YAML frontmatter for a new note. */
 export function buildFrontmatter(title: string, now: Date): string {
   const iso = now.toISOString();
   return `---
-title: "${title.replace(/"/g, '\\"')}"
-created: "${iso}"
-updated: "${iso}"
+title: ${yamlQuote(title)}
+created: ${yamlQuote(iso)}
+updated: ${yamlQuote(iso)}
 tags: []
 ---`;
 }

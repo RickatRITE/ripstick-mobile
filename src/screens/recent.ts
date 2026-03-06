@@ -1,0 +1,111 @@
+/** Recent notes screen — list and open notes. */
+
+import { getToken } from '../auth';
+import { getAllFiles, getFileContent } from '../api';
+import { parseNote } from '../frontmatter';
+import { state, render, navigate, disconnect, type NoteListItem } from '../state';
+
+export function renderRecent(app: HTMLElement): void {
+  app.innerHTML = `
+    <div class="capture-screen">
+      <div class="header">
+        <div class="tab-bar">
+          <span class="tab" id="tab-new">New</span>
+          <span class="tab active">Recent</span>
+        </div>
+        <span class="settings-link" id="signout-btn">Sign out</span>
+      </div>
+
+      ${state.recentLoading ? `
+        <div class="loading-indicator">Loading notes...</div>
+      ` : `
+        <div class="note-list">
+          ${state.recentNotes.length === 0 ? '<div class="empty-state">No notes found</div>' : ''}
+          ${state.recentNotes.map((n) => `
+            <button class="note-list-item" data-path="${n.path}">
+              <span class="note-item-group">${n.group}</span>
+              <span class="note-item-name">${n.filename.replace('.md', '')}</span>
+            </button>
+          `).join('')}
+        </div>
+      `}
+    </div>
+  `;
+
+  document.getElementById('tab-new')?.addEventListener('click', () => {
+    state.status = null;
+    navigate('capture');
+  });
+  document.getElementById('signout-btn')?.addEventListener('click', disconnect);
+
+  document.querySelectorAll('.note-list-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const path = (el as HTMLElement).dataset.path!;
+      openNote(path);
+    });
+  });
+}
+
+export async function loadRecentNotes(): Promise<void> {
+  const token = getToken();
+  if (!token) return;
+
+  state.recentLoading = true;
+  render();
+
+  try {
+    const allFiles = await getAllFiles(token, state.repo);
+
+    const notes: NoteListItem[] = allFiles
+      .filter((f) => {
+        const parts = f.path.split('/');
+        return parts.length >= 2 && !parts[parts.length - 1].startsWith('_');
+      })
+      .map((f) => {
+        const parts = f.path.split('/');
+        const filename = parts[parts.length - 1];
+        const group = parts.slice(0, -1).join('/');
+        const dateMatch = filename.match(/^(\d{4}-\d{2}-\d{2})/);
+        return {
+          path: f.path,
+          group,
+          filename,
+          sha: f.sha,
+          date: dateMatch ? dateMatch[1] : '0000-00-00',
+        };
+      });
+
+    notes.sort((a, b) => {
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      return b.filename.localeCompare(a.filename);
+    });
+
+    state.recentNotes = notes.slice(0, 30);
+  } catch (e) {
+    state.status = { type: 'error', message: `Failed to load notes: ${e}` };
+  }
+
+  state.recentLoading = false;
+  render();
+}
+
+async function openNote(path: string): Promise<void> {
+  const token = getToken();
+  if (!token) return;
+
+  state.status = { type: 'info', message: 'Loading...' };
+  state.screen = 'edit';
+  render();
+
+  try {
+    const { content, sha } = await getFileContent(token, state.repo, path);
+    const parsed = parseNote(content);
+
+    state.editNote = { path, sha, parsed, raw: content };
+    state.status = null;
+  } catch (e) {
+    state.status = { type: 'error', message: `Failed to load note: ${e}` };
+    state.screen = 'recent';
+  }
+  render();
+}

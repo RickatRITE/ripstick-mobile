@@ -1,5 +1,7 @@
 /** Minimal frontmatter parser — extract title, dates, and body from a RipStick markdown note. */
 
+import { yamlQuote } from './note-format';
+
 export interface ParsedNote {
   title: string;
   created: string;
@@ -76,12 +78,11 @@ export function toggleDoneInRaw(raw: string): string {
 /** Rebuild the full file content from parsed fields + edited body. */
 export function rebuildNote(parsed: ParsedNote, newBody: string): string {
   const now = new Date().toISOString();
-  const title = parsed.title.replace(/"/g, '\\"');
   const fm = `---
-title: "${title}"
-created: "${parsed.created || now}"
-updated: "${now}"
-tags: [${parsed.tags.map((t) => `"${t}"`).join(', ')}]
+title: ${yamlQuote(parsed.title)}
+created: ${yamlQuote(parsed.created || now)}
+updated: ${yamlQuote(now)}
+tags: [${parsed.tags.map((t) => yamlQuote(t)).join(', ')}]
 ---`;
   return `${fm}\n${newBody}\n`;
 }

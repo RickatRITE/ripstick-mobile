@@ -10,8 +10,8 @@
   --bg-input: #2a2a2a;
   --fg: #e0e0e0;
   --fg-muted: #888;
-  --accent: #4a8eff;
-  --accent-hover: #3a7aee;
+  --accent: #007acc;
+  --accent-hover: #006bb3;
   --border: #333;
   --success: #4caf50;
   --error: #f44336;
@@ -277,12 +277,12 @@ textarea {
 
 .status-success {
   color: var(--success);
-  background: rgba(76, 175, 80, 0.1);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
 }
 
 .status-error {
   color: var(--error);
-  background: rgba(244, 67, 54, 0.1);
+  background: color-mix(in srgb, var(--error) 10%, transparent);
 }
 
 .status-info {
