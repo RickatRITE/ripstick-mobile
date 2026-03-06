@@ -40,6 +40,7 @@ async function init(): Promise<void> {
     if (!state.groups.includes(state.selectedGroup)) {
       state.selectedGroup = state.groups[0];
     }
+    history.replaceState({ screen: 'capture' }, '', '');
     render();
 
     // Validate in background — if token expired, bounce to auth
@@ -77,13 +78,13 @@ async function init(): Promise<void> {
       state.screen = 'auth';
     }
   }
+  history.replaceState({ screen: state.screen }, '', '');
   render();
 }
 
 // ── History Back Navigation ───────────────────────────────────────────
 
-// Replace initial state so popstate has something to land on
-history.replaceState({ screen: state.screen }, '', '');
+// replaceState is called after init() sets the real screen
 
 window.addEventListener('popstate', (e) => {
   const target = e.state?.screen;
