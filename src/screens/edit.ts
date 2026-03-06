@@ -51,12 +51,9 @@ export function renderEdit(app: HTMLElement): void {
   }
   createEditor(mount, editBody);
 
-  // Back button
+  // Back button — use history.back() so it pops the history entry
   document.getElementById('back-btn')!.addEventListener('click', () => {
-    destroyEditor();
-    state.editNote = null;
-    state.status = null;
-    navigate('recent');
+    history.back();
   });
 
   // Save content edit

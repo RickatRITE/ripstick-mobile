@@ -3,7 +3,7 @@
 import { getToken } from '../auth';
 import { listFiles, createNote } from '../api';
 import { buildFrontmatter, generateFilename, buildCommitMessage, MARKERS, MARKER_MAP, type MarkerType } from '../note-format';
-import { state, render, disconnect, LAST_GROUP_KEY } from '../state';
+import { state, render, navigate, disconnect, LAST_GROUP_KEY } from '../state';
 import { escapeHtml, statusHtml } from '../utils';
 import { loadRecentNotes } from './recent';
 
@@ -18,7 +18,7 @@ export function renderCapture(app: HTMLElement): void {
           <span class="tab" id="tab-recent">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v5</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v6</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -61,9 +61,8 @@ export function renderCapture(app: HTMLElement): void {
 function bindCaptureEvents(): void {
   document.getElementById('tab-recent')?.addEventListener('click', () => {
     state.status = null;
-    state.screen = 'recent';
+    navigate('recent');
     loadRecentNotes();
-    render();
   });
   document.getElementById('signout-btn')?.addEventListener('click', disconnect);
 

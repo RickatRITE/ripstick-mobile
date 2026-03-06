@@ -3,7 +3,7 @@
 import { getToken, getRepoFullName, validateToken } from './auth';
 import { listGroups } from './api';
 import { destroyEditor } from './editor';
-import { state, setRenderFn, render, CACHED_GROUPS_KEY, CACHED_USERNAME_KEY } from './state';
+import { state, setRenderFn, render, navigate, CACHED_GROUPS_KEY, CACHED_USERNAME_KEY } from './state';
 import { renderAuth } from './screens/auth';
 import { renderCapture } from './screens/capture';
 import { renderRecent } from './screens/recent';
@@ -79,6 +79,30 @@ async function init(): Promise<void> {
   }
   render();
 }
+
+// ── History Back Navigation ───────────────────────────────────────────
+
+// Replace initial state so popstate has something to land on
+history.replaceState({ screen: state.screen }, '', '');
+
+window.addEventListener('popstate', (e) => {
+  const target = e.state?.screen;
+  if (target) {
+    if (state.screen === 'edit') destroyEditor();
+    state.editNote = null;
+    state.status = null;
+    navigate(target, false);
+  } else {
+    // No previous state — go to the default screen without exiting
+    if (state.screen === 'edit') {
+      destroyEditor();
+      state.editNote = null;
+      state.status = null;
+      navigate('recent', false);
+      history.replaceState({ screen: 'recent' }, '', '');
+    }
+  }
+});
 
 // ── Boot ──────────────────────────────────────────────────────────────
 

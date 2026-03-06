@@ -78,8 +78,11 @@ export function render(): void {
   _renderFn();
 }
 
-export function navigate(screen: Screen): void {
+export function navigate(screen: Screen, pushHistory = true): void {
   state.screen = screen;
+  if (pushHistory) {
+    history.pushState({ screen }, '', '');
+  }
   render();
 }
 
