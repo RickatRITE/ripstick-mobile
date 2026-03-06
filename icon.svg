@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#181818"/>
+  <g transform="translate(256,256)">
+    <!-- Stylized pen/lightning bolt - captures "Rip" + "Stick" -->
+    <path d="M-40,-180 L20,-60 L-20,-60 L40,180 L-10,40 L30,40 Z"
+          fill="#f0f0f0" stroke="none"/>
+    <!-- Subtle accent dot -->
+    <circle cx="60" cy="-120" r="16" fill="#4a9eff" opacity="0.8"/>
+  </g>
+</svg>
