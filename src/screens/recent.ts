@@ -14,7 +14,7 @@ export function renderRecent(app: HTMLElement): void {
           <span class="tab active">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v8</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v9</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
