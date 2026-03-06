@@ -1,7 +1,7 @@
 import { getToken, setToken, clearToken, getRepoFullName, setRepoFullName, validateToken, discoverRepo } from './auth';
 import { listGroups, listFiles, createNote, getAllFiles, getFileContent, updateFile, type FileEntry } from './api';
 import { buildFrontmatter, generateFilename, buildCommitMessage, type MarkerType } from './note-format';
-import { parseNote, rebuildNote, type ParsedNote } from './frontmatter';
+import { parseNote, rebuildNote, setMarkerInRaw, toggleDoneInRaw, type ParsedNote } from './frontmatter';
 import { createEditor, getMarkdown, destroyEditor } from './editor';
 import './style.css';
 
@@ -268,7 +268,6 @@ function renderEdit() {
   if (!state.editNote) return;
 
   const { parsed } = state.editNote;
-  const m = parsed.marker ? MARKER_MAP[parsed.marker] : null;
 
   app.innerHTML = `
     <div class="edit-screen">
@@ -278,7 +277,19 @@ function renderEdit() {
         <span class="settings-link" id="save-edit-btn">${state.editSaving ? 'Saving...' : 'Save'}</span>
       </div>
 
-      ${m ? `<div class="edit-marker">${m.icon} ${m.label}</div>` : ''}
+      <div class="triage-bar">
+        <div class="triage-markers">
+          <button class="triage-chip ${!parsed.marker ? 'active' : ''}" data-triage-marker="">—</button>
+          ${MARKERS.map((m) => `
+            <button class="triage-chip ${m.type === parsed.marker ? 'active' : ''}" data-triage-marker="${m.type}">${m.icon}</button>
+          `).join('')}
+        </div>
+        ${parsed.marker ? `
+          <button class="triage-done ${parsed.done ? 'is-done' : ''}" id="triage-done-btn">
+            ${parsed.done ? '✓ Done' : 'Mark done'}
+          </button>
+        ` : ''}
+      </div>
 
       <div class="editor-container" id="editor-mount"></div>
 
@@ -292,12 +303,12 @@ function renderEdit() {
   const mount = document.getElementById('editor-mount')!;
   // Strip the marker comment from the body for editing — it'll be re-prepended on save
   let editBody = parsed.body;
-  const markerComment = parsed.marker ? `<!-- rs:${parsed.marker}` : null;
-  if (markerComment && editBody.trimStart().startsWith('<!--')) {
+  if (parsed.marker && editBody.trimStart().startsWith('<!--')) {
     editBody = editBody.replace(/^<!--\s*rs:[^\n]*-->\r?\n?/, '');
   }
   createEditor(mount, editBody);
 
+  // Back button
   document.getElementById('back-btn')!.addEventListener('click', () => {
     destroyEditor();
     state.editNote = null;
@@ -306,7 +317,19 @@ function renderEdit() {
     render();
   });
 
+  // Save content edit
   document.getElementById('save-edit-btn')!.addEventListener('click', handleSaveEdit);
+
+  // Triage: marker type change
+  document.querySelectorAll('.triage-chip').forEach((el) => {
+    el.addEventListener('click', () => {
+      const newMarker = (el as HTMLElement).dataset.triageMarker || '';
+      handleTriageMarker(newMarker as MarkerType | '');
+    });
+  });
+
+  // Triage: done toggle
+  document.getElementById('triage-done-btn')?.addEventListener('click', handleTriageDone);
 }
 
 // ── Event Binding ──────────────────────────────────────────────────────
@@ -553,12 +576,9 @@ async function handleSaveEdit() {
   try {
     let markdown = getMarkdown();
 
-    // Re-prepend marker comment if present
-    if (state.editNote.parsed.marker) {
-      // Extract full original marker line (might have assignee, due date, etc.)
-      const originalMarkerMatch = state.editNote.parsed.body.match(/^(<!--\s*rs:[^\n]*-->)\r?\n?/);
-      const markerLine = originalMarkerMatch ? originalMarkerMatch[1] : `<!-- rs:${state.editNote.parsed.marker} -->`;
-      markdown = `${markerLine}\n${markdown}`;
+    // Re-prepend marker comment if present (use markerLine which reflects triage changes)
+    if (state.editNote.parsed.marker && state.editNote.parsed.markerLine) {
+      markdown = `${state.editNote.parsed.markerLine}\n${markdown}`;
     }
 
     const fullContent = rebuildNote(state.editNote.parsed, markdown);
@@ -578,15 +598,79 @@ async function handleSaveEdit() {
 
   state.editSaving = false;
   render();
+  if (state.status?.type === 'success') clearStatusAfterDelay();
+}
 
-  if (state.status?.type === 'success') {
-    setTimeout(() => {
-      if (state.status?.type === 'success') {
-        state.status = null;
-        render();
-      }
-    }, 2000);
+async function handleTriageMarker(newMarker: MarkerType | '') {
+  if (!state.editNote) return;
+  const token = getToken();
+  if (!token) return;
+
+  // Same marker — no-op
+  if (newMarker === state.editNote.parsed.marker) return;
+
+  state.editSaving = true;
+  state.status = { type: 'info', message: 'Saving...' };
+  render();
+
+  try {
+    const newRaw = setMarkerInRaw(state.editNote.raw, newMarker, false);
+    const commitMessage = `[triage] ${state.editNote.path}\n\nripstick-action: triage\nripstick-file: ${state.editNote.path}\nripstick-detail: Changed marker to ${newMarker || 'none'}\nripstick-priority: low`;
+
+    await updateFile(token, state.repo, state.editNote.path, newRaw, state.editNote.sha, commitMessage);
+
+    // Refresh local state
+    const updated = await getFileContent(token, state.repo, state.editNote.path);
+    state.editNote.raw = updated.content;
+    state.editNote.sha = updated.sha;
+    state.editNote.parsed = parseNote(updated.content);
+    state.status = { type: 'success', message: 'Saved' };
+  } catch (e) {
+    state.status = { type: 'error', message: `Triage failed: ${e}` };
   }
+
+  state.editSaving = false;
+  render();
+  clearStatusAfterDelay();
+}
+
+async function handleTriageDone() {
+  if (!state.editNote || !state.editNote.parsed.marker) return;
+  const token = getToken();
+  if (!token) return;
+
+  state.editSaving = true;
+  state.status = { type: 'info', message: 'Saving...' };
+  render();
+
+  try {
+    const newRaw = toggleDoneInRaw(state.editNote.raw);
+    const newDone = !state.editNote.parsed.done;
+    const commitMessage = `[triage] ${state.editNote.path}\n\nripstick-action: triage\nripstick-file: ${state.editNote.path}\nripstick-detail: Marked ${newDone ? 'done' : 'undone'}\nripstick-priority: low`;
+
+    await updateFile(token, state.repo, state.editNote.path, newRaw, state.editNote.sha, commitMessage);
+
+    const updated = await getFileContent(token, state.repo, state.editNote.path);
+    state.editNote.raw = updated.content;
+    state.editNote.sha = updated.sha;
+    state.editNote.parsed = parseNote(updated.content);
+    state.status = { type: 'success', message: newDone ? 'Done' : 'Reopened' };
+  } catch (e) {
+    state.status = { type: 'error', message: `Triage failed: ${e}` };
+  }
+
+  state.editSaving = false;
+  render();
+  clearStatusAfterDelay();
+}
+
+function clearStatusAfterDelay() {
+  setTimeout(() => {
+    if (state.status?.type === 'success') {
+      state.status = null;
+      render();
+    }
+  }, 2000);
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────
