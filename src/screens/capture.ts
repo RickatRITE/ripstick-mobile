@@ -4,7 +4,7 @@ import { getToken } from '../auth';
 import { listFiles, createNote } from '../api';
 import { buildFrontmatter, generateFilename, buildCommitMessage, MARKERS, MARKER_MAP, type MarkerType } from '../note-format';
 import { state, render, disconnect, LAST_GROUP_KEY } from '../state';
-import { escapeHtml, datePlaceholder, statusHtml } from '../utils';
+import { escapeHtml, statusHtml } from '../utils';
 import { loadRecentNotes } from './recent';
 
 export function renderCapture(app: HTMLElement): void {
@@ -17,7 +17,10 @@ export function renderCapture(app: HTMLElement): void {
           <span class="tab active">New</span>
           <span class="tab" id="tab-recent">Recent</span>
         </div>
-        <span class="settings-link" id="signout-btn">Sign out</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--fg-muted)">v4</span>
+          <span class="settings-link" id="signout-btn">Sign out</span>
+        </div>
       </div>
 
       <div class="group-picker">
@@ -26,7 +29,7 @@ export function renderCapture(app: HTMLElement): void {
         `).join('')}
       </div>
 
-      <input type="text" class="title-input" id="title-input" value="${escapeHtml(state.title)}" placeholder="${datePlaceholder()}" />
+      <input type="text" class="title-input" id="title-input" value="${escapeHtml(state.title)}" placeholder="Title" />
 
       <div class="body-group">
         <textarea id="body-input" placeholder="Write your note...">${escapeHtml(state.body)}</textarea>

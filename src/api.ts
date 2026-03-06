@@ -41,9 +41,15 @@ export interface FileEntry {
 
 /** Get all files in the repo via the Git Trees API (single call). */
 export async function getAllFiles(token: string, repo: string): Promise<FileEntry[]> {
-  const res = await fetch(`${GITHUB_API}/repos/${repo}/git/trees/main?recursive=1`, {
+  // Try main first, fall back to master
+  let res = await fetch(`${GITHUB_API}/repos/${repo}/git/trees/main?recursive=1`, {
     headers: headers(token),
   });
+  if (!res.ok) {
+    res = await fetch(`${GITHUB_API}/repos/${repo}/git/trees/master?recursive=1`, {
+      headers: headers(token),
+    });
+  }
   if (!res.ok) return [];
   const data = (await res.json()) as { tree: FileEntry[] };
   return data.tree.filter((f) => f.type === 'blob' && f.path.endsWith('.md') && !f.path.startsWith('_') && !f.path.startsWith('.'));

@@ -13,7 +13,10 @@ export function renderRecent(app: HTMLElement): void {
           <span class="tab" id="tab-new">New</span>
           <span class="tab active">Recent</span>
         </div>
-        <span class="settings-link" id="signout-btn">Sign out</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--fg-muted)">v4</span>
+          <span class="settings-link" id="signout-btn">Sign out</span>
+        </div>
       </div>
 
       ${state.recentLoading ? `
