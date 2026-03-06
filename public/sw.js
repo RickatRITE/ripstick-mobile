@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ripstick-v4';
+const CACHE_NAME = 'ripstick-v5';
 
 self.addEventListener('install', (event) => {
   // Skip waiting to activate immediately
