@@ -210,7 +210,7 @@ ${e}
           <span class="tab active">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v2</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v3</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -237,7 +237,7 @@ ${e}
           <span class="tab" id="tab-recent">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v2</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v3</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
