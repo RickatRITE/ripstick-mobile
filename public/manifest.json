@@ -1,0 +1,21 @@
+{
+  "name": "RipStick Capture",
+  "short_name": "RipStick",
+  "description": "Quick note capture for RipStick",
+  "start_url": "/ripstick-mobile/",
+  "display": "standalone",
+  "background_color": "#181818",
+  "theme_color": "#181818",
+  "icons": [
+    {
+      "src": "/ripstick-mobile/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/ripstick-mobile/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
