@@ -11,5 +11,13 @@
   "devDependencies": {
     "typescript": "^5.4",
     "vite": "^6"
+  },
+  "dependencies": {
+    "@tiptap/core": "^3.20.0",
+    "@tiptap/extension-task-item": "^3.20.0",
+    "@tiptap/extension-task-list": "^3.20.0",
+    "@tiptap/pm": "^3.20.0",
+    "@tiptap/starter-kit": "^3.20.0",
+    "tiptap-markdown": "^0.9.0"
   }
 }
