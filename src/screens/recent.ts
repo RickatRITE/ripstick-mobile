@@ -14,7 +14,7 @@ export function renderRecent(app: HTMLElement): void {
           <span class="tab active">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v7</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v8</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -27,7 +27,7 @@ export function renderRecent(app: HTMLElement): void {
           ${state.recentNotes.map((n) => `
             <button class="note-list-item" data-path="${n.path}">
               <span class="note-item-group">${n.group}</span>
-              <span class="note-item-name">${n.filename.replace('.md', '')}</span>
+              <span class="note-item-name" data-title-path="${n.path}">${n.title || n.filename.replace('.md', '')}</span>
             </button>
           `).join('')}
         </div>
@@ -90,6 +90,35 @@ export async function loadRecentNotes(): Promise<void> {
 
   state.recentLoading = false;
   render();
+
+  // Fetch titles in background for notes that don't have one yet
+  if (token && state.recentNotes.length > 0) {
+    fetchTitles(token);
+  }
+}
+
+async function fetchTitles(token: string): Promise<void> {
+  const toFetch = state.recentNotes.filter((n) => !n.title);
+  if (toFetch.length === 0) return;
+
+  // Fetch in parallel, batches of 10 to avoid overwhelming the API
+  for (let i = 0; i < toFetch.length; i += 10) {
+    const batch = toFetch.slice(i, i + 10);
+    await Promise.all(batch.map(async (note) => {
+      try {
+        const { content } = await getFileContent(token, state.repo, note.path);
+        const parsed = parseNote(content);
+        if (parsed.title) {
+          note.title = parsed.title;
+          // Update DOM directly to avoid full re-render flicker
+          const el = document.querySelector(`[data-title-path="${note.path}"]`);
+          if (el) el.textContent = parsed.title;
+        }
+      } catch {
+        // Silently skip — filename stays as fallback
+      }
+    }));
+  }
 }
 
 async function openNote(path: string): Promise<void> {

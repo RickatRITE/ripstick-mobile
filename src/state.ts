@@ -22,6 +22,8 @@ export interface NoteListItem {
   sha: string;
   /** Extracted from filename: YYYY-MM-DD */
   date: string;
+  /** Frontmatter title, fetched asynchronously */
+  title?: string;
 }
 
 export interface AppState {
