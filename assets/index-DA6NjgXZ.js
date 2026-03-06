@@ -194,15 +194,15 @@ tags: []
 ripstick-action: note-created
 ripstick-file: ${t}/${e}
 ripstick-detail: Created note: ${n}
-ripstick-priority: medium`}function ki(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function C3(){return new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"})+" note..."}function w3(){if(!k.status)return"";let t=ki(k.status.message);return k.status.type==="success"&&k.lastSavedPath&&k.repo&&(t+=` <a href="https://github.com/${k.repo}/blob/main/${k.lastSavedPath}" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: underline;">View on GitHub</a>`),t}function su(t=2e3){setTimeout(()=>{var e;((e=k.status)==null?void 0:e.type)==="success"&&(k.status=null,L())},t)}function sr(t){const e={title:"",created:"",updated:"",tags:[],body:"",marker:"",done:!1,markerLine:""},n=t.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);if(!n)return e.body=t,e;const r=n[1];e.body=n[2];const i=r.match(/^title:\s*"?([^"\n]*)"?\s*$/m);i&&(e.title=i[1]);const s=r.match(/^created:\s*"?([^"\n]*)"?\s*$/m);s&&(e.created=s[1]);const o=r.match(/^updated:\s*"?([^"\n]*)"?\s*$/m);o&&(e.updated=o[1]);const u=e.body.match(/^(<!--\s*rs:(\w+)((?::[^\s]*)*)?\s*-->)\r?\n?/);return u&&(e.markerLine=u[1],e.marker=u[2],e.done=(u[3]||"").includes(":done")),e}function kf(t,e,n){const r=sr(t),i=e?[e,...n?["done"]:[]]:[],s=i.length>0?`<!-- rs:${i.join(":")} -->`:"";let o=r.body.replace(/^<!--\s*rs:[^\n]*-->\r?\n?/,"");return s&&(o=`${s}
-${o}`),yf(r,o)}function E3(t){const e=sr(t);return e.marker?kf(t,e.marker,!e.done):t}function yf(t,e){const n=new Date().toISOString();return`${`---
+ripstick-priority: medium`}function ki(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function C3(){if(!k.status)return"";let t=ki(k.status.message);return k.status.type==="success"&&k.lastSavedPath&&k.repo&&(t+=` <a href="https://github.com/${k.repo}/blob/main/${k.lastSavedPath}" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: underline;">View on GitHub</a>`),t}function su(t=2e3){setTimeout(()=>{var e;((e=k.status)==null?void 0:e.type)==="success"&&(k.status=null,L())},t)}function sr(t){const e={title:"",created:"",updated:"",tags:[],body:"",marker:"",done:!1,markerLine:""},n=t.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);if(!n)return e.body=t,e;const r=n[1];e.body=n[2];const i=r.match(/^title:\s*"?([^"\n]*)"?\s*$/m);i&&(e.title=i[1]);const s=r.match(/^created:\s*"?([^"\n]*)"?\s*$/m);s&&(e.created=s[1]);const o=r.match(/^updated:\s*"?([^"\n]*)"?\s*$/m);o&&(e.updated=o[1]);const u=e.body.match(/^(<!--\s*rs:(\w+)((?::[^\s]*)*)?\s*-->)\r?\n?/);return u&&(e.markerLine=u[1],e.marker=u[2],e.done=(u[3]||"").includes(":done")),e}function kf(t,e,n){const r=sr(t),i=e?[e,...n?["done"]:[]]:[],s=i.length>0?`<!-- rs:${i.join(":")} -->`:"";let o=r.body.replace(/^<!--\s*rs:[^\n]*-->\r?\n?/,"");return s&&(o=`${s}
+${o}`),yf(r,o)}function w3(t){const e=sr(t);return e.marker?kf(t,e.marker,!e.done):t}function yf(t,e){const n=new Date().toISOString();return`${`---
 title: ${Dt(t.title)}
 created: ${Dt(t.created||n)}
 updated: ${Dt(n)}
 tags: [${t.tags.map(i=>Dt(i)).join(", ")}]
 ---`}
 ${e}
-`}function S3(t){var e,n;t.innerHTML=`
+`}function E3(t){var e,n;t.innerHTML=`
     <div class="capture-screen">
       <div class="header">
         <div class="tab-bar">
@@ -210,7 +210,7 @@ ${e}
           <span class="tab active">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v3</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v4</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -229,7 +229,7 @@ ${e}
         </div>
       `}
     </div>
-  `,(e=document.getElementById("tab-new"))==null||e.addEventListener("click",()=>{k.status=null,gf("capture")}),(n=document.getElementById("signout-btn"))==null||n.addEventListener("click",bf),document.querySelectorAll(".note-list-item").forEach(r=>{r.addEventListener("click",()=>{const i=r.dataset.path;M3(i)})})}async function A3(){const t=Vt();if(t){k.recentLoading=!0,L();try{const n=(await Af(t,k.repo)).filter(r=>{const i=r.path.split("/");return i.length>=2&&!i[i.length-1].startsWith("_")}).map(r=>{const i=r.path.split("/"),s=i[i.length-1],o=i.slice(0,-1).join("/"),u=s.match(/^(\d{4}-\d{2}-\d{2})/);return{path:r.path,group:o,filename:s,sha:r.sha,date:u?u[1]:"0000-00-00"}});n.sort((r,i)=>r.date!==i.date?i.date.localeCompare(r.date):i.filename.localeCompare(r.filename)),k.recentNotes=n.slice(0,30)}catch(e){k.status={type:"error",message:`Failed to load notes: ${e}`}}k.recentLoading=!1,L()}}async function M3(t){const e=Vt();if(e){k.status={type:"info",message:"Loading..."},k.screen="edit",L();try{const{content:n,sha:r}=await yi(e,k.repo,t),i=sr(n);k.editNote={path:t,sha:r,parsed:i,raw:n},k.status=null}catch(n){k.status={type:"error",message:`Failed to load note: ${n}`},k.screen="recent"}L()}}function v3(t){const e=k.marker?b3[k.marker]:null;t.innerHTML=`
+  `,(e=document.getElementById("tab-new"))==null||e.addEventListener("click",()=>{k.status=null,gf("capture")}),(n=document.getElementById("signout-btn"))==null||n.addEventListener("click",bf),document.querySelectorAll(".note-list-item").forEach(r=>{r.addEventListener("click",()=>{const i=r.dataset.path;A3(i)})})}async function S3(){const t=Vt();if(t){k.recentLoading=!0,L();try{const n=(await Af(t,k.repo)).filter(r=>{const i=r.path.split("/");return i.length>=2&&!i[i.length-1].startsWith("_")}).map(r=>{const i=r.path.split("/"),s=i[i.length-1],o=i.slice(0,-1).join("/"),u=s.match(/^(\d{4}-\d{2}-\d{2})/);return{path:r.path,group:o,filename:s,sha:r.sha,date:u?u[1]:"0000-00-00"}});n.sort((r,i)=>r.date!==i.date?i.date.localeCompare(r.date):i.filename.localeCompare(r.filename)),k.recentNotes=n.slice(0,30)}catch(e){k.status={type:"error",message:`Failed to load notes: ${e}`}}k.recentLoading=!1,L()}}async function A3(t){const e=Vt();if(e){k.status={type:"info",message:"Loading..."},k.screen="edit",L();try{const{content:n,sha:r}=await yi(e,k.repo,t),i=sr(n);k.editNote={path:t,sha:r,parsed:i,raw:n},k.status=null}catch(n){k.status={type:"error",message:`Failed to load note: ${n}`},k.screen="recent"}L()}}function M3(t){const e=k.marker?b3[k.marker]:null;t.innerHTML=`
     <div class="capture-screen">
       <div class="header">
         <div class="tab-bar">
@@ -237,7 +237,7 @@ ${e}
           <span class="tab" id="tab-recent">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v3</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v4</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -248,7 +248,7 @@ ${e}
         `).join("")}
       </div>
 
-      <input type="text" class="title-input" id="title-input" value="${ki(k.title)}" placeholder="${C3()}" />
+      <input type="text" class="title-input" id="title-input" value="${ki(k.title)}" placeholder="Title" />
 
       <div class="body-group">
         <textarea id="body-input" placeholder="Write your note...">${ki(k.body)}</textarea>
@@ -266,16 +266,16 @@ ${e}
       `}
 
       <div class="form-footer">
-        ${k.status?`<div class="status-message status-${k.status.type}" style="margin-bottom: 8px">${w3()}</div>`:""}
+        ${k.status?`<div class="status-message status-${k.status.type}" style="margin-bottom: 8px">${C3()}</div>`:""}
         <button class="btn btn-primary" id="save-btn" ${k.saving?"disabled":""} style="width: 100%">
           ${k.saving?"Saving...":"Save Note"}
         </button>
       </div>
     </div>
-  `,T3()}function T3(){var t,e,n;(t=document.getElementById("tab-recent"))==null||t.addEventListener("click",()=>{k.status=null,k.screen="recent",A3(),L()}),(e=document.getElementById("signout-btn"))==null||e.addEventListener("click",bf),document.querySelectorAll(".group-chip").forEach(r=>{r.addEventListener("click",()=>{k.selectedGroup=r.dataset.group,localStorage.setItem(pf,k.selectedGroup),L()})}),k.markerExpanded?document.querySelectorAll(".marker-chip").forEach(r=>{r.addEventListener("click",()=>{k.marker=r.dataset.marker||"",k.markerExpanded=!1,L()})}):(n=document.getElementById("marker-toggle"))==null||n.addEventListener("click",()=>{k.marker?(k.marker="",L()):(k.markerExpanded=!0,L())}),document.getElementById("title-input").addEventListener("input",r=>{k.title=r.target.value}),document.getElementById("body-input").addEventListener("input",r=>{k.body=r.target.value}),document.getElementById("save-btn").addEventListener("click",()=>D3(Vt()))}async function D3(t){var r;const e=k.title.trim(),n=k.body.trim();if(!e&&!n){k.status={type:"error",message:"Please enter a title or body."},L();return}k.saving=!0,k.status={type:"info",message:"Saving..."},L();try{const i=await Sf(t,k.repo,k.selectedGroup),s=y3(i),o=new Date,u=e||o.toLocaleString(),a=k3(u,o);let l=n;k.marker&&(l=`<!-- rs:${k.marker} -->
+  `,v3()}function v3(){var t,e,n;(t=document.getElementById("tab-recent"))==null||t.addEventListener("click",()=>{k.status=null,k.screen="recent",S3(),L()}),(e=document.getElementById("signout-btn"))==null||e.addEventListener("click",bf),document.querySelectorAll(".group-chip").forEach(r=>{r.addEventListener("click",()=>{k.selectedGroup=r.dataset.group,localStorage.setItem(pf,k.selectedGroup),L()})}),k.markerExpanded?document.querySelectorAll(".marker-chip").forEach(r=>{r.addEventListener("click",()=>{k.marker=r.dataset.marker||"",k.markerExpanded=!1,L()})}):(n=document.getElementById("marker-toggle"))==null||n.addEventListener("click",()=>{k.marker?(k.marker="",L()):(k.markerExpanded=!0,L())}),document.getElementById("title-input").addEventListener("input",r=>{k.title=r.target.value}),document.getElementById("body-input").addEventListener("input",r=>{k.body=r.target.value}),document.getElementById("save-btn").addEventListener("click",()=>T3(Vt()))}async function T3(t){var r;const e=k.title.trim(),n=k.body.trim();if(!e&&!n){k.status={type:"error",message:"Please enter a title or body."},L();return}k.saving=!0,k.status={type:"info",message:"Saving..."},L();try{const i=await Sf(t,k.repo,k.selectedGroup),s=y3(i),o=new Date,u=e||o.toLocaleString(),a=k3(u,o);let l=n;k.marker&&(l=`<!-- rs:${k.marker} -->
 ${n}`);const c=`${a}
 ${l}
-`,d=x3(k.selectedGroup,s,u);await Mf(t,k.repo,k.selectedGroup,s,c,d);const h=`${k.selectedGroup}/${s}`;k.lastSavedPath=h,k.status={type:"success",message:`Saved to ${k.selectedGroup}`},k.title="",k.body="",k.marker="",k.markerExpanded=!1}catch(i){k.status={type:"error",message:`Save failed: ${i}`},k.lastSavedPath=null}k.saving=!1,L(),((r=k.status)==null?void 0:r.type)==="success"&&setTimeout(()=>{var i;((i=k.status)==null?void 0:i.type)==="success"&&(k.status=null,k.lastSavedPath=null,L())},5e3)}function _3(t){var i;if(!k.editNote)return;const{parsed:e}=k.editNote;t.innerHTML=`
+`,d=x3(k.selectedGroup,s,u);await Mf(t,k.repo,k.selectedGroup,s,c,d);const h=`${k.selectedGroup}/${s}`;k.lastSavedPath=h,k.status={type:"success",message:`Saved to ${k.selectedGroup}`},k.title="",k.body="",k.marker="",k.markerExpanded=!1}catch(i){k.status={type:"error",message:`Save failed: ${i}`},k.lastSavedPath=null}k.saving=!1,L(),((r=k.status)==null?void 0:r.type)==="success"&&setTimeout(()=>{var i;((i=k.status)==null?void 0:i.type)==="success"&&(k.status=null,k.lastSavedPath=null,L())},5e3)}function D3(t){var i;if(!k.editNote)return;const{parsed:e}=k.editNote;t.innerHTML=`
     <div class="edit-screen">
       <div class="header">
         <span class="back-link" id="back-btn">← Back</span>
@@ -303,20 +303,20 @@ ${l}
         ${k.status?`<div class="status-message status-${k.status.type}">${k.status.message}</div>`:""}
       </div>
     </div>
-  `;const n=document.getElementById("editor-mount");let r=e.body;e.marker&&r.trimStart().startsWith("<!--")&&(r=r.replace(/^<!--\s*rs:[^\n]*-->\r?\n?/,"")),f3(n,r),document.getElementById("back-btn").addEventListener("click",()=>{ru(),k.editNote=null,k.status=null,gf("recent")}),document.getElementById("save-edit-btn").addEventListener("click",N3),document.querySelectorAll(".triage-chip").forEach(s=>{s.addEventListener("click",()=>{const o=s.dataset.triageMarker||"";O3(o)})}),(i=document.getElementById("triage-done-btn"))==null||i.addEventListener("click",I3)}async function N3(){var e;if(!k.editNote)return;const t=Vt();if(t){k.editSaving=!0,k.status={type:"info",message:"Saving..."},L();try{let n=h3();k.editNote.parsed.marker&&k.editNote.parsed.markerLine&&(n=`${k.editNote.parsed.markerLine}
+  `;const n=document.getElementById("editor-mount");let r=e.body;e.marker&&r.trimStart().startsWith("<!--")&&(r=r.replace(/^<!--\s*rs:[^\n]*-->\r?\n?/,"")),f3(n,r),document.getElementById("back-btn").addEventListener("click",()=>{ru(),k.editNote=null,k.status=null,gf("recent")}),document.getElementById("save-edit-btn").addEventListener("click",_3),document.querySelectorAll(".triage-chip").forEach(s=>{s.addEventListener("click",()=>{const o=s.dataset.triageMarker||"";N3(o)})}),(i=document.getElementById("triage-done-btn"))==null||i.addEventListener("click",O3)}async function _3(){var e;if(!k.editNote)return;const t=Vt();if(t){k.editSaving=!0,k.status={type:"info",message:"Saving..."},L();try{let n=h3();k.editNote.parsed.marker&&k.editNote.parsed.markerLine&&(n=`${k.editNote.parsed.markerLine}
 ${n}`);const r=yf(k.editNote.parsed,n),i=`[content-edit] ${k.editNote.path}
 
 ripstick-action: content-edit
 ripstick-file: ${k.editNote.path}
 ripstick-detail: Edited on mobile
-ripstick-priority: medium`;await uo(t,k.repo,k.editNote.path,r,k.editNote.sha,i),k.status={type:"success",message:"Saved"};const s=await yi(t,k.repo,k.editNote.path);k.editNote.sha=s.sha}catch(n){k.status={type:"error",message:`Save failed: ${n}`}}k.editSaving=!1,L(),((e=k.status)==null?void 0:e.type)==="success"&&su()}}async function O3(t){if(!k.editNote)return;const e=Vt();if(e&&t!==k.editNote.parsed.marker){k.editSaving=!0,k.status={type:"info",message:"Saving..."},L();try{const n=kf(k.editNote.raw,t,!1),r=`[triage] ${k.editNote.path}
+ripstick-priority: medium`;await uo(t,k.repo,k.editNote.path,r,k.editNote.sha,i),k.status={type:"success",message:"Saved"};const s=await yi(t,k.repo,k.editNote.path);k.editNote.sha=s.sha}catch(n){k.status={type:"error",message:`Save failed: ${n}`}}k.editSaving=!1,L(),((e=k.status)==null?void 0:e.type)==="success"&&su()}}async function N3(t){if(!k.editNote)return;const e=Vt();if(e&&t!==k.editNote.parsed.marker){k.editSaving=!0,k.status={type:"info",message:"Saving..."},L();try{const n=kf(k.editNote.raw,t,!1),r=`[triage] ${k.editNote.path}
 
 ripstick-action: triage
 ripstick-file: ${k.editNote.path}
 ripstick-detail: Changed marker to ${t||"none"}
-ripstick-priority: low`;await uo(e,k.repo,k.editNote.path,n,k.editNote.sha,r);const i=await yi(e,k.repo,k.editNote.path);k.editNote.raw=i.content,k.editNote.sha=i.sha,k.editNote.parsed=sr(i.content),k.status={type:"success",message:"Saved"}}catch(n){k.status={type:"error",message:`Triage failed: ${n}`}}k.editSaving=!1,L(),su()}}async function I3(){if(!k.editNote||!k.editNote.parsed.marker)return;const t=Vt();if(t){k.editSaving=!0,k.status={type:"info",message:"Saving..."},L();try{const e=E3(k.editNote.raw),n=!k.editNote.parsed.done,r=`[triage] ${k.editNote.path}
+ripstick-priority: low`;await uo(e,k.repo,k.editNote.path,n,k.editNote.sha,r);const i=await yi(e,k.repo,k.editNote.path);k.editNote.raw=i.content,k.editNote.sha=i.sha,k.editNote.parsed=sr(i.content),k.status={type:"success",message:"Saved"}}catch(n){k.status={type:"error",message:`Triage failed: ${n}`}}k.editSaving=!1,L(),su()}}async function O3(){if(!k.editNote||!k.editNote.parsed.marker)return;const t=Vt();if(t){k.editSaving=!0,k.status={type:"info",message:"Saving..."},L();try{const e=w3(k.editNote.raw),n=!k.editNote.parsed.done,r=`[triage] ${k.editNote.path}
 
 ripstick-action: triage
 ripstick-file: ${k.editNote.path}
 ripstick-detail: Marked ${n?"done":"undone"}
-ripstick-priority: low`;await uo(t,k.repo,k.editNote.path,e,k.editNote.sha,r);const i=await yi(t,k.repo,k.editNote.path);k.editNote.raw=i.content,k.editNote.sha=i.sha,k.editNote.parsed=sr(i.content),k.status={type:"success",message:n?"Done":"Reopened"}}catch(e){k.status={type:"error",message:`Triage failed: ${e}`}}k.editSaving=!1,L(),su()}}const yr=document.getElementById("app");function R3(){switch(k.screen!=="edit"&&ru(),k.screen){case"auth":m3(yr);break;case"capture":v3(yr);break;case"recent":S3(yr);break;case"edit":_3(yr);break}}p3(R3);async function F3(){const t=Vt(),e=oo();if(t&&e&&k.groups.length>0){k.screen="capture",k.repo=e,k.groups.includes(k.selectedGroup)||(k.selectedGroup=k.groups[0]),L();try{const n=await Ss(t);k.username=n,localStorage.setItem(Zn,n);const r=await As(t,e);k.groups=r,localStorage.setItem(Gn,JSON.stringify(r)),r.includes(k.selectedGroup)||(k.selectedGroup=r[0]||"general"),L()}catch{k.screen="auth",L()}return}if(t&&e)try{k.username=await Ss(t),k.repo=e,k.groups=await As(t,e),localStorage.setItem(Zn,k.username),localStorage.setItem(Gn,JSON.stringify(k.groups)),k.groups.length>0&&!k.groups.includes(k.selectedGroup)&&(k.selectedGroup=k.groups[0]),k.screen="capture"}catch{k.screen="auth"}L()}"serviceWorker"in navigator&&navigator.serviceWorker.register("/ripstick-mobile/sw.js").catch(()=>{});F3();
+ripstick-priority: low`;await uo(t,k.repo,k.editNote.path,e,k.editNote.sha,r);const i=await yi(t,k.repo,k.editNote.path);k.editNote.raw=i.content,k.editNote.sha=i.sha,k.editNote.parsed=sr(i.content),k.status={type:"success",message:n?"Done":"Reopened"}}catch(e){k.status={type:"error",message:`Triage failed: ${e}`}}k.editSaving=!1,L(),su()}}const yr=document.getElementById("app");function I3(){switch(k.screen!=="edit"&&ru(),k.screen){case"auth":m3(yr);break;case"capture":M3(yr);break;case"recent":E3(yr);break;case"edit":D3(yr);break}}p3(I3);async function R3(){const t=Vt(),e=oo();if(t&&e&&k.groups.length>0){k.screen="capture",k.repo=e,k.groups.includes(k.selectedGroup)||(k.selectedGroup=k.groups[0]),L();try{const n=await Ss(t);k.username=n,localStorage.setItem(Zn,n);const r=await As(t,e);k.groups=r,localStorage.setItem(Gn,JSON.stringify(r)),r.includes(k.selectedGroup)||(k.selectedGroup=r[0]||"general"),L()}catch{k.screen="auth",L()}return}if(t&&e)try{k.username=await Ss(t),k.repo=e,k.groups=await As(t,e),localStorage.setItem(Zn,k.username),localStorage.setItem(Gn,JSON.stringify(k.groups)),k.groups.length>0&&!k.groups.includes(k.selectedGroup)&&(k.selectedGroup=k.groups[0]),k.screen="capture"}catch{k.screen="auth"}L()}"serviceWorker"in navigator&&navigator.serviceWorker.register("/ripstick-mobile/sw.js").catch(()=>{});R3();
