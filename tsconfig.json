@@ -7,10 +7,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "rootDir": "src",
     "declaration": false,
     "sourceMap": true,
     "types": ["vite/client"]
   },
-  "include": ["src"]
+  "include": ["src", "../shared"]
 }

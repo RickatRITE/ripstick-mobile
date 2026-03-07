@@ -1,10 +1,7 @@
 /** TipTap editor setup for mobile — same engine as desktop, vanilla JS (no React). */
 
 import { Editor } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
-import TaskList from '@tiptap/extension-task-list';
-import TaskItem from '@tiptap/extension-task-item';
-import { Markdown } from 'tiptap-markdown';
+import { getBaseExtensions } from '../../shared/tiptap-base';
 
 let editorInstance: Editor | null = null;
 
@@ -15,18 +12,7 @@ export function createEditor(element: HTMLElement, content: string): Editor {
   editorInstance = new Editor({
     element,
     content,
-    extensions: [
-      StarterKit.configure({
-        codeBlock: { HTMLAttributes: { class: 'code-block' } },
-      }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Markdown.configure({
-        html: false,
-        transformPastedText: false,
-        transformCopiedText: true,
-      }),
-    ],
+    extensions: getBaseExtensions(),
     editorProps: {
       attributes: {
         class: 'tiptap-editor',

@@ -17,7 +17,7 @@ export function statusHtml(): string {
 
   // Add "View on GitHub" link for successful saves
   if (state.status.type === 'success' && state.lastSavedPath && state.repo) {
-    html += ` <a href="https://github.com/${state.repo}/blob/main/${state.lastSavedPath}" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: underline;">View on GitHub</a>`;
+    html += ` <a href="https://github.com/${encodeURI(state.repo)}/blob/main/${encodeURI(state.lastSavedPath)}" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: underline;">View on GitHub</a>`;
   }
   return html;
 }

@@ -130,7 +130,11 @@ async function handleSave(token: string): Promise<void> {
     }
 
     const content = `${frontmatter}\n${fullBody}\n`;
-    const commitMessage = buildCommitMessage(state.selectedGroup, filename, effectiveTitle);
+    const commitMessage = buildCommitMessage({
+      action: 'note-created',
+      file: `${state.selectedGroup}/${filename}`,
+      detail: `Created note: ${effectiveTitle}`,
+    });
 
     await createNote(token, state.repo, state.selectedGroup, filename, content, commitMessage);
 
