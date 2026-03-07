@@ -24,11 +24,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Fetch shared modules from parent repo
-        run: |
-          git clone --depth 1 --filter=blob:none --sparse \
-            https://github.com/RickatRITE/RipStick.git /tmp/ripstick
-          cd /tmp/ripstick && git sparse-checkout set shared
-          cp -r /tmp/ripstick/shared "$GITHUB_WORKSPACE/../shared"
+        uses: actions/checkout@v4
+        with:
+          repository: RickatRITE/RipStick
+          token: ${{ secrets.PARENT_REPO_TOKEN }}
+          sparse-checkout: shared
+          path: _parent
+      - run: cp -r _parent/shared "$GITHUB_WORKSPACE/../shared" && rm -rf _parent
 
       - uses: actions/setup-node@v4
         with:
