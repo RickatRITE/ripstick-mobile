@@ -18,7 +18,7 @@ export function renderCapture(app: HTMLElement): void {
           <span class="tab" id="tab-recent">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v11</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v12</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
