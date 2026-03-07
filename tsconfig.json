@@ -9,7 +9,12 @@
     "outDir": "dist",
     "declaration": false,
     "sourceMap": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@tiptap/*": ["node_modules/@tiptap/*"],
+      "tiptap-markdown": ["node_modules/tiptap-markdown"]
+    }
   },
   "include": ["src", "../shared"]
 }
