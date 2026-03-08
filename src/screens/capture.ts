@@ -39,7 +39,7 @@ export function renderCapture(app: HTMLElement): void {
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${syncDotHtml()}
-          <span style="font-size:10px;color:var(--fg-muted)">v13</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v14</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -173,55 +173,60 @@ async function handleSave(): Promise<void> {
   state.saving = true;
   render();
 
-  const now = new Date();
-  const effectiveTitle = title || now.toLocaleString();
-  const filename = generateFilename();
-  const frontmatter = buildFrontmatter(effectiveTitle, now);
+  try {
+    const now = new Date();
+    const effectiveTitle = title || now.toLocaleString();
+    const filename = generateFilename();
+    const frontmatter = buildFrontmatter(effectiveTitle, now);
 
-  let fullBody = body;
-  if (state.marker) {
-    fullBody = `<!-- rs:${state.marker} -->\n${body}`;
+    let fullBody = body;
+    if (state.marker) {
+      fullBody = `<!-- rs:${state.marker} -->\n${body}`;
+    }
+
+    const content = `${frontmatter}\n${fullBody}\n`;
+    const commitMessage = buildCommitMessage({
+      action: 'note-created',
+      file: `${state.selectedGroup}/${filename}`,
+      detail: `Created note: ${effectiveTitle}`,
+    });
+
+    const token = getToken() || '';
+    const repo = state.repo;
+
+    // Persist to IndexedDB — this is the moment the save "succeeds"
+    await enqueue({
+      group: state.selectedGroup,
+      filename,
+      content,
+      commitMessage,
+      createdAt: Date.now(),
+      token,
+      repo,
+    });
+
+    // Clear form and draft
+    state.title = '';
+    state.body = '';
+    state.marker = '';
+    state.markerExpanded = false;
+    state.status = { type: 'success', message: 'Saved' };
+    state.lastSavedPath = null;
+    await clearDraft();
+
+    // Try to sync immediately (no-op if offline)
+    flushOutbox().catch(() => {});
+
+    setTimeout(() => {
+      if (state.status?.type === 'success') {
+        state.status = null;
+        render();
+      }
+    }, 3000);
+  } catch {
+    state.status = { type: 'error', message: 'Failed to save note. Please try again.' };
   }
 
-  const content = `${frontmatter}\n${fullBody}\n`;
-  const commitMessage = buildCommitMessage({
-    action: 'note-created',
-    file: `${state.selectedGroup}/${filename}`,
-    detail: `Created note: ${effectiveTitle}`,
-  });
-
-  const token = getToken() || '';
-  const repo = state.repo;
-
-  // Persist to IndexedDB — this is the moment the save "succeeds"
-  await enqueue({
-    group: state.selectedGroup,
-    filename,
-    content,
-    commitMessage,
-    createdAt: Date.now(),
-    token,
-    repo,
-  });
-
-  // Clear form and draft
-  state.title = '';
-  state.body = '';
-  state.marker = '';
-  state.markerExpanded = false;
   state.saving = false;
-  state.status = { type: 'success', message: 'Saved' };
-  state.lastSavedPath = null;
-  await clearDraft();
   render();
-
-  // Try to sync immediately (no-op if offline)
-  flushOutbox().catch(() => {});
-
-  setTimeout(() => {
-    if (state.status?.type === 'success') {
-      state.status = null;
-      render();
-    }
-  }, 3000);
 }
