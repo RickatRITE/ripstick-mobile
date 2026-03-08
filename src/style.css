@@ -15,6 +15,7 @@
   --border: #333;
   --success: #4caf50;
   --error: #f44336;
+  --amber: var(--amber);
   --radius: 8px;
 }
 
@@ -547,4 +548,133 @@ textarea {
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+/* ── Sync Dot ─────────────────────────────────────────────────────── */
+
+.sync-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+.sync-dot--green { background: var(--success); }
+.sync-dot--amber { background: var(--amber); }
+.sync-dot--red { background: var(--error); }
+
+.sync-dot--syncing {
+  background: var(--amber);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Toast ─────────────────────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  bottom: 72px;
+  left: 16px;
+  right: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--fg);
+  text-align: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ── Outbox View ──────────────────────────────────────────────────── */
+
+.outbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.outbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: background 0.1s;
+}
+
+.outbox-item--failed {
+  cursor: pointer;
+  border-color: color-mix(in srgb, var(--error) 30%, var(--border));
+}
+
+.outbox-item--failed:active {
+  background: var(--bg-input);
+}
+
+.outbox-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.outbox-item-title {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.outbox-item-group {
+  font-size: 11px;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.outbox-status {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.outbox-status--pending { color: var(--amber); }
+.outbox-status--syncing { color: var(--amber); }
+.outbox-status--failed { color: var(--error); }
+
+.outbox-item-delete {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.outbox-item-delete:active {
+  background: var(--bg-input);
+  color: var(--error);
 }

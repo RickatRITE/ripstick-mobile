@@ -13,7 +13,9 @@ export const CACHED_USERNAME_KEY = 'ripstick-cached-username';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-export type Screen = 'auth' | 'capture' | 'recent' | 'edit';
+export type Screen = 'auth' | 'capture' | 'recent' | 'edit' | 'outbox';
+
+export type SyncHealth = 'green' | 'amber' | 'syncing' | 'red';
 
 export interface NoteListItem {
   path: string;
@@ -47,6 +49,9 @@ export interface AppState {
   recentLoading: boolean;
   editNote: { path: string; sha: string; parsed: ParsedNote; raw: string } | null;
   editSaving: boolean;
+  // Sync
+  syncHealth: SyncHealth;
+  toast: string | null;
 }
 
 // ── State Singleton ───────────────────────────────────────────────────
@@ -68,6 +73,8 @@ export const state: AppState = {
   recentLoading: false,
   editNote: null,
   editSaving: false,
+  syncHealth: 'green',
+  toast: null,
 };
 
 // ── Render Callback ───────────────────────────────────────────────────
@@ -92,7 +99,14 @@ export function navigate(screen: Screen, pushHistory = true): void {
 
 // ── Shared Actions ────────────────────────────────────────────────────
 
-export function disconnect(): void {
+export async function disconnect(): Promise<void> {
+  // Lazy import to avoid circular dependency
+  const { pendingCount } = await import('./outbox');
+  const count = await pendingCount();
+  if (count > 0) {
+    const confirmed = confirm(`You have ${count} unsynced note${count > 1 ? 's' : ''}. Sign out anyway?`);
+    if (!confirmed) return;
+  }
   clearToken();
   localStorage.removeItem(CACHED_GROUPS_KEY);
   localStorage.removeItem(CACHED_USERNAME_KEY);
@@ -101,5 +115,6 @@ export function disconnect(): void {
   state.repo = '';
   state.groups = [];
   state.status = null;
+  state.syncHealth = 'green';
   render();
 }

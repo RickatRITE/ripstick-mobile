@@ -3,11 +3,14 @@
 import { getToken, getRepoFullName, validateToken } from './auth';
 import { listGroups } from './api';
 import { destroyEditor } from './editor';
+import { loadDraft } from './outbox';
+import { flushOutbox, refreshSyncHealth } from './sync';
 import { state, setRenderFn, render, navigate, CACHED_GROUPS_KEY, CACHED_USERNAME_KEY } from './state';
 import { renderAuth } from './screens/auth';
 import { renderCapture } from './screens/capture';
 import { renderRecent } from './screens/recent';
 import { renderEdit } from './screens/edit';
+import { renderOutbox } from './screens/outbox';
 import './style.css';
 
 // ── Render Dispatcher ─────────────────────────────────────────────────
@@ -22,6 +25,7 @@ function renderScreen(): void {
     case 'capture': renderCapture(app); break;
     case 'recent':  renderRecent(app); break;
     case 'edit':    renderEdit(app); break;
+    case 'outbox':  renderOutbox(app); break;
   }
 }
 
@@ -33,6 +37,19 @@ async function init(): Promise<void> {
   const token = getToken();
   const repo = getRepoFullName();
 
+  // Restore draft from IndexedDB
+  try {
+    const draft = await loadDraft();
+    if (draft) {
+      state.title = draft.title;
+      state.body = draft.body;
+      state.marker = draft.marker;
+      if (draft.group) state.selectedGroup = draft.group;
+    }
+  } catch {
+    // Draft restore is best-effort
+  }
+
   // Show cached UI immediately if we have cached state
   if (token && repo && state.groups.length > 0) {
     state.screen = 'capture';
@@ -43,7 +60,10 @@ async function init(): Promise<void> {
     history.replaceState({ screen: 'capture' }, '', '');
     render();
 
-    // Validate in background — if token expired, bounce to auth
+    // Refresh sync health from outbox
+    refreshSyncHealth().catch(() => {});
+
+    // Validate in background — distinguish auth errors from network errors
     try {
       const username = await validateToken(token);
       state.username = username;
@@ -55,9 +75,17 @@ async function init(): Promise<void> {
         state.selectedGroup = groups[0] || 'general';
       }
       render();
-    } catch {
-      state.screen = 'auth';
-      render();
+
+      // Auth validated + online — flush any queued notes
+      flushOutbox().catch(() => {});
+    } catch (e: any) {
+      // Only bounce to auth on explicit auth rejection (401/403)
+      // Network errors → keep the capture screen with cached credentials
+      if (isAuthError(e)) {
+        state.screen = 'auth';
+        render();
+      }
+      // Otherwise swallow — user keeps capture screen, online listener will retry
     }
     return;
   }
@@ -74,17 +102,54 @@ async function init(): Promise<void> {
         state.selectedGroup = state.groups[0];
       }
       state.screen = 'capture';
+
+      // Flush any queued notes from a previous session
+      flushOutbox().catch(() => {});
     } catch {
       state.screen = 'auth';
     }
   }
   history.replaceState({ screen: state.screen }, '', '');
   render();
+
+  // Initialize sync health
+  refreshSyncHealth().catch(() => {});
 }
 
-// ── History Back Navigation ───────────────────────────────────────────
+/** Returns true for HTTP 401/403 auth failures, false for network/other errors. */
+function isAuthError(e: any): boolean {
+  const msg = String(e);
+  return msg.includes('401') || msg.includes('403');
+}
 
-// replaceState is called after init() sets the real screen
+// ── Online Event — Sync + Revalidation ───────────────────────────────
+
+window.addEventListener('online', () => {
+  // Flush queued notes when connectivity returns
+  flushOutbox().catch(() => {});
+
+  // Re-validate auth in background if we have cached credentials
+  const token = getToken();
+  const repo = getRepoFullName();
+  if (token && repo && state.screen !== 'auth') {
+    validateToken(token)
+      .then((username) => {
+        state.username = username;
+        localStorage.setItem(CACHED_USERNAME_KEY, username);
+        return listGroups(token, repo);
+      })
+      .then((groups) => {
+        state.groups = groups;
+        localStorage.setItem(CACHED_GROUPS_KEY, JSON.stringify(groups));
+        render();
+      })
+      .catch(() => {
+        // Silently ignore — if auth is truly expired, sync will surface it
+      });
+  }
+});
+
+// ── History Back Navigation ───────────────────────────────────────────
 
 window.addEventListener('popstate', (e) => {
   const target = e.state?.screen;
@@ -101,6 +166,9 @@ window.addEventListener('popstate', (e) => {
       state.status = null;
       navigate('recent', false);
       history.replaceState({ screen: 'recent' }, '', '');
+    } else if (state.screen === 'outbox') {
+      navigate('capture', false);
+      history.replaceState({ screen: 'capture' }, '', '');
     }
   }
 });

@@ -14,7 +14,7 @@ export function renderRecent(app: HTMLElement): void {
           <span class="tab active">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v12</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v13</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -39,7 +39,7 @@ export function renderRecent(app: HTMLElement): void {
     state.status = null;
     navigate('capture');
   });
-  document.getElementById('signout-btn')?.addEventListener('click', disconnect);
+  document.getElementById('signout-btn')?.addEventListener('click', () => disconnect());
 
   document.querySelectorAll('.note-list-item').forEach((el) => {
     el.addEventListener('click', () => {
@@ -84,8 +84,9 @@ export async function loadRecentNotes(): Promise<void> {
     });
 
     state.recentNotes = notes.slice(0, 30);
-  } catch (e) {
-    state.status = { type: 'error', message: `Failed to load notes: ${e}` };
+  } catch {
+    // Network error or offline — show contextual message, not raw error
+    state.status = { type: 'info', message: "Can't load notes right now." };
   }
 
   state.recentLoading = false;

@@ -1,11 +1,31 @@
-/** Capture screen — create new notes. */
+/** Capture screen — create new notes with offline-resilient save. */
 
 import { getToken } from '../auth';
-import { listFiles, createNote } from '../api';
 import { buildFrontmatter, generateFilename, buildCommitMessage, MARKERS, MARKER_MAP, type MarkerType } from '../note-format';
+import { enqueue, saveDraft, clearDraft } from '../outbox';
+import { flushOutbox } from '../sync';
 import { state, render, navigate, disconnect, LAST_GROUP_KEY } from '../state';
-import { escapeHtml, statusHtml } from '../utils';
+import { escapeHtml } from '../utils';
 import { loadRecentNotes } from './recent';
+
+let _draftTimer: ReturnType<typeof setTimeout> | null = null;
+
+// ── Sync Dot HTML ────────────────────────────────────────────────────
+
+function syncDotHtml(): string {
+  const { syncHealth } = state;
+  const cls = syncHealth === 'syncing' ? 'sync-dot sync-dot--syncing' : `sync-dot sync-dot--${syncHealth}`;
+  return `<span class="${cls}" id="sync-dot" title="Sync status"></span>`;
+}
+
+// ── Toast HTML ───────────────────────────────────────────────────────
+
+function toastHtml(): string {
+  if (!state.toast) return '';
+  return `<div class="toast" id="toast-bar">${escapeHtml(state.toast)}</div>`;
+}
+
+// ── Render ───────────────────────────────────────────────────────────
 
 export function renderCapture(app: HTMLElement): void {
   const markerLabel = state.marker ? MARKER_MAP[state.marker] : null;
@@ -18,7 +38,8 @@ export function renderCapture(app: HTMLElement): void {
           <span class="tab" id="tab-recent">Recent</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v12</span>
+          ${syncDotHtml()}
+          <span style="font-size:10px;color:var(--fg-muted)">v13</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -47,16 +68,20 @@ export function renderCapture(app: HTMLElement): void {
       `}
 
       <div class="form-footer">
-        ${state.status ? `<div class="status-message status-${state.status.type}" style="margin-bottom: 8px">${statusHtml()}</div>` : ''}
+        ${state.status ? `<div class="status-message status-${state.status.type}" style="margin-bottom: 8px">${escapeHtml(state.status.message)}</div>` : ''}
         <button class="btn btn-primary" id="save-btn" ${state.saving ? 'disabled' : ''} style="width: 100%">
           ${state.saving ? 'Saving...' : 'Save Note'}
         </button>
       </div>
+
+      ${toastHtml()}
     </div>
   `;
 
   bindCaptureEvents();
 }
+
+// ── Events ───────────────────────────────────────────────────────────
 
 function bindCaptureEvents(): void {
   document.getElementById('tab-recent')?.addEventListener('click', () => {
@@ -64,12 +89,24 @@ function bindCaptureEvents(): void {
     navigate('recent');
     loadRecentNotes();
   });
-  document.getElementById('signout-btn')?.addEventListener('click', disconnect);
+  document.getElementById('signout-btn')?.addEventListener('click', () => disconnect());
+
+  // Sync dot → open outbox view
+  document.getElementById('sync-dot')?.addEventListener('click', () => {
+    navigate('outbox');
+  });
+
+  // Toast → open outbox view
+  document.getElementById('toast-bar')?.addEventListener('click', () => {
+    state.toast = null;
+    navigate('outbox');
+  });
 
   document.querySelectorAll('.group-chip').forEach((el) => {
     el.addEventListener('click', () => {
       state.selectedGroup = (el as HTMLElement).dataset.group!;
       localStorage.setItem(LAST_GROUP_KEY, state.selectedGroup);
+      scheduleDraftSave();
       render();
     });
   });
@@ -79,6 +116,7 @@ function bindCaptureEvents(): void {
       el.addEventListener('click', () => {
         state.marker = ((el as HTMLElement).dataset.marker || '') as MarkerType | '';
         state.markerExpanded = false;
+        scheduleDraftSave();
         render();
       });
     });
@@ -86,6 +124,7 @@ function bindCaptureEvents(): void {
     document.getElementById('marker-toggle')?.addEventListener('click', () => {
       if (state.marker) {
         state.marker = '';
+        scheduleDraftSave();
         render();
       } else {
         state.markerExpanded = true;
@@ -96,14 +135,32 @@ function bindCaptureEvents(): void {
 
   document.getElementById('title-input')!.addEventListener('input', (e) => {
     state.title = (e.target as HTMLInputElement).value;
+    scheduleDraftSave();
   });
   document.getElementById('body-input')!.addEventListener('input', (e) => {
     state.body = (e.target as HTMLTextAreaElement).value;
+    scheduleDraftSave();
   });
-  document.getElementById('save-btn')!.addEventListener('click', () => handleSave(getToken()!));
+  document.getElementById('save-btn')!.addEventListener('click', handleSave);
 }
 
-async function handleSave(token: string): Promise<void> {
+// ── Draft Persistence ────────────────────────────────────────────────
+
+function scheduleDraftSave(): void {
+  if (_draftTimer) clearTimeout(_draftTimer);
+  _draftTimer = setTimeout(() => {
+    saveDraft({
+      title: state.title,
+      body: state.body,
+      marker: state.marker,
+      group: state.selectedGroup,
+    }).catch(() => {});
+  }, 500);
+}
+
+// ── Save (Optimistic Capture) ────────────────────────────────────────
+
+async function handleSave(): Promise<void> {
   const title = state.title.trim();
   const body = state.body.trim();
 
@@ -114,52 +171,57 @@ async function handleSave(token: string): Promise<void> {
   }
 
   state.saving = true;
-  state.status = { type: 'info', message: 'Saving...' };
   render();
 
-  try {
-    const existingFiles = await listFiles(token, state.repo, state.selectedGroup);
-    const filename = generateFilename(existingFiles);
-    const now = new Date();
-    const effectiveTitle = title || now.toLocaleString();
-    const frontmatter = buildFrontmatter(effectiveTitle, now);
+  const now = new Date();
+  const effectiveTitle = title || now.toLocaleString();
+  const filename = generateFilename();
+  const frontmatter = buildFrontmatter(effectiveTitle, now);
 
-    let fullBody = body;
-    if (state.marker) {
-      fullBody = `<!-- rs:${state.marker} -->\n${body}`;
-    }
-
-    const content = `${frontmatter}\n${fullBody}\n`;
-    const commitMessage = buildCommitMessage({
-      action: 'note-created',
-      file: `${state.selectedGroup}/${filename}`,
-      detail: `Created note: ${effectiveTitle}`,
-    });
-
-    await createNote(token, state.repo, state.selectedGroup, filename, content, commitMessage);
-
-    const savedPath = `${state.selectedGroup}/${filename}`;
-    state.lastSavedPath = savedPath;
-    state.status = { type: 'success', message: `Saved to ${state.selectedGroup}` };
-    state.title = '';
-    state.body = '';
-    state.marker = '';
-    state.markerExpanded = false;
-  } catch (e) {
-    state.status = { type: 'error', message: `Save failed: ${e}` };
-    state.lastSavedPath = null;
+  let fullBody = body;
+  if (state.marker) {
+    fullBody = `<!-- rs:${state.marker} -->\n${body}`;
   }
 
+  const content = `${frontmatter}\n${fullBody}\n`;
+  const commitMessage = buildCommitMessage({
+    action: 'note-created',
+    file: `${state.selectedGroup}/${filename}`,
+    detail: `Created note: ${effectiveTitle}`,
+  });
+
+  const token = getToken() || '';
+  const repo = state.repo;
+
+  // Persist to IndexedDB — this is the moment the save "succeeds"
+  await enqueue({
+    group: state.selectedGroup,
+    filename,
+    content,
+    commitMessage,
+    createdAt: Date.now(),
+    token,
+    repo,
+  });
+
+  // Clear form and draft
+  state.title = '';
+  state.body = '';
+  state.marker = '';
+  state.markerExpanded = false;
   state.saving = false;
+  state.status = { type: 'success', message: 'Saved' };
+  state.lastSavedPath = null;
+  await clearDraft();
   render();
 
-  if (state.status?.type === 'success') {
-    setTimeout(() => {
-      if (state.status?.type === 'success') {
-        state.status = null;
-        state.lastSavedPath = null;
-        render();
-      }
-    }, 5000);
-  }
+  // Try to sync immediately (no-op if offline)
+  flushOutbox().catch(() => {});
+
+  setTimeout(() => {
+    if (state.status?.type === 'success') {
+      state.status = null;
+      render();
+    }
+  }, 3000);
 }
