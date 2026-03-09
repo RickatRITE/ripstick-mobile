@@ -16,5 +16,6 @@
       "tiptap-markdown": ["node_modules/tiptap-markdown"]
     }
   },
-  "include": ["src", "../shared"]
+  "include": ["src", "../shared"],
+  "exclude": ["src/**/*.test.ts"]
 }
