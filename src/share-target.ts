@@ -73,6 +73,22 @@ function smartTitle(url: string): string {
 }
 
 /**
+ * Human-readable source name for the breadcrumb link.
+ * Shorter than smartTitle — used as link text, not as the note title.
+ */
+function sourceName(url: string): string {
+  for (const { pattern, title } of URL_PATTERNS) {
+    const m = url.match(pattern);
+    if (m) return title(m);
+  }
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'link';
+  }
+}
+
+/**
  * Parse the Web Share Target query params from the current URL.
  * Returns null if no share data is present.
  *
@@ -93,14 +109,11 @@ export function parseShareTarget(): SharePayload | null {
   // Find the canonical URL — prefer explicit `url` param, else extract from text
   const url = rawUrl || extractUrl(rawText) || '';
 
-  // Body = the text content with the URL stripped out (it's noise in the body)
+  // Body = the text content with the URL stripped out (it's noise in the body).
+  // split/join for literal matching — String.replace treats special chars as regex.
   let body = rawText;
   if (url && body.includes(url)) {
-    body = body.replace(url, '').trim();
-  }
-  // If the body is empty but we have a URL, put the URL in the body so the note isn't blank
-  if (!body && url) {
-    body = url;
+    body = body.split(url).join('').trim();
   }
 
   // Title priority: smart title from URL > shared title > first line of body
@@ -110,13 +123,15 @@ export function parseShareTarget(): SharePayload | null {
   } else if (rawTitle) {
     title = rawTitle;
   } else {
-    // Use first line of body, truncated
-    title = body.split('\n')[0].slice(0, 80) || 'Shared Note';
+    title = (body.split('\n')[0].slice(0, 80)) || 'Shared Note';
   }
 
-  // If we have a URL, append it as a source link after the body
-  if (url && body !== url) {
-    body = body + '\n\n' + url;
+  // Append a visible source breadcrumb — this is the provenance indicator the
+  // user sees in their markdown. They can edit or delete it like any other text.
+  if (url) {
+    const source = sourceName(url);
+    const breadcrumb = `*Shared from [${source}](${url})*`;
+    body = body ? body + '\n\n' + breadcrumb : breadcrumb;
   }
 
   return { title, body };
