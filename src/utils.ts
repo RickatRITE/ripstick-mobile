@@ -5,21 +5,30 @@ import { state, render } from './state';
 /** Sentinel for notes with no parseable date in their filename. */
 export const NO_DATE = '0000-00-00';
 
-/** Format a date string for display: "Mar 8" or "Mar 8, 2025" if not this year. */
+/** Format a date string for display: "Mar 8, 10:50 AM" or "Mar 8, 2025, 10:50 AM".
+ *  Date-only inputs omit the time portion. */
 export function formatDate(dateStr: string): string {
   if (!dateStr || dateStr === NO_DATE) return '';
   try {
-    // Handle both date-only ("2026-03-08") and full datetime ("2026-03-08T10:50:55...")
-    const d = dateStr.includes('T') || dateStr.includes(' ')
-      ? new Date(dateStr)
-      : new Date(dateStr + 'T00:00:00');
+    const hasTime = dateStr.includes('T') || dateStr.includes(' ');
+    const d = hasTime ? new Date(dateStr) : new Date(dateStr + 'T00:00:00');
     if (isNaN(d.getTime())) return '';
     const now = new Date();
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const month = months[d.getMonth()];
     const day = d.getDate();
-    if (d.getFullYear() === now.getFullYear()) return `${month} ${day}`;
-    return `${month} ${day}, ${d.getFullYear()}`;
+
+    let time = '';
+    if (hasTime) {
+      const h = d.getHours();
+      const m = d.getMinutes().toString().padStart(2, '0');
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 || 12;
+      time = `, ${h12}:${m} ${ampm}`;
+    }
+
+    if (d.getFullYear() === now.getFullYear()) return `${month} ${day}${time}`;
+    return `${month} ${day}, ${d.getFullYear()}${time}`;
   } catch {
     return dateStr;
   }

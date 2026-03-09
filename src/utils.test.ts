@@ -28,12 +28,15 @@ describe('formatDate', () => {
     expect(result).not.toContain('undefined');
     expect(result).not.toContain('NaN');
     expect(result).toMatch(/Mar 8/);
+    // Should include AM/PM time
+    expect(result).toMatch(/\d{1,2}:\d{2} [AP]M/);
   });
 
   it('handles ISO datetime with Z timezone', () => {
     const result = formatDate('2026-03-08T15:50:55Z');
     expect(result).not.toContain('NaN');
     expect(result).toMatch(/Mar/);
+    expect(result).toMatch(/\d{1,2}:\d{2} [AP]M/);
   });
 
   it('handles ISO datetime with space separator', () => {
@@ -41,11 +44,27 @@ describe('formatDate', () => {
     expect(result).not.toContain('undefined');
     expect(result).not.toContain('NaN');
     expect(result).toMatch(/Mar 8/);
+    expect(result).toMatch(/10:50 AM/);
   });
 
-  it('handles date-only strings', () => {
+  it('formats 12-hour time correctly', () => {
+    // Noon → 12:00 PM, not 0:00 PM
+    const noon = formatDate('2026-03-08T12:00:00');
+    expect(noon).toContain('12:00 PM');
+
+    // Midnight → 12:00 AM, not 0:00 AM
+    const midnight = formatDate('2026-03-08T00:05:00');
+    expect(midnight).toContain('12:05 AM');
+
+    // Afternoon
+    const pm = formatDate('2026-03-08T17:30:00');
+    expect(pm).toContain('5:30 PM');
+  });
+
+  it('omits time for date-only strings', () => {
     const result = formatDate('2026-03-08');
     expect(result).toMatch(/Mar 8/);
+    expect(result).not.toMatch(/[AP]M/);
   });
 
   it('returns empty string for empty input', () => {
