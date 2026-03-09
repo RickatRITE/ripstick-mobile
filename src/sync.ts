@@ -1,9 +1,10 @@
 /** Flush-on-event sync engine — pushes outbox entries to GitHub. */
 
 import { getAll, remove, markStatus, type OutboxEntry } from './outbox';
-import { createNote } from './api';
+import { createNote, uploadAsset } from './api';
 import { getToken } from './auth';
 import { generateFilename } from './note-format';
+import { uint8ToBase64 } from './image-utils';
 import { state, render } from './state';
 
 const MAX_ATTEMPTS = 5;
@@ -34,6 +35,13 @@ export async function flushOutbox(): Promise<void> {
       await refreshSyncHealth();
 
       try {
+        // Upload image asset first (if present) — image must exist before the
+        // note references it. If the asset upload fails, the note is not created.
+        if (entry.asset) {
+          const assetBase64 = uint8ToBase64(new Uint8Array(entry.asset.data));
+          await uploadAsset(freshToken, entry.repo, entry.asset.filename, assetBase64, `Add image ${entry.asset.filename}`);
+        }
+
         await createNote(freshToken, entry.repo, entry.group, entry.filename, entry.content, entry.commitMessage);
         await remove(entry.id);
       } catch (e: any) {

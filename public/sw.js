@@ -1,4 +1,5 @@
-const CACHE_NAME = 'ripstick-v20';
+const CACHE_NAME = 'ripstick-v21';
+// Must match SHARE_CACHE in src/share-target.ts
 const SHARE_CACHE = 'ripstick-share-temp';
 
 self.addEventListener('install', (event) => {

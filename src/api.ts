@@ -2,6 +2,14 @@
 
 const GITHUB_API = 'https://api.github.com';
 
+/** Cached default branch — detected by getAllFiles, used for raw content URLs. */
+let _defaultBranch: string = 'main';
+
+/** Get the cached default branch name (main or master). */
+export function getDefaultBranch(): string {
+  return _defaultBranch;
+}
+
 function headers(token: string): Record<string, string> {
   return {
     Authorization: `Bearer ${token}`,
@@ -41,14 +49,17 @@ export interface FileEntry {
 
 /** Get all files in the repo via the Git Trees API (single call). */
 export async function getAllFiles(token: string, repo: string): Promise<FileEntry[]> {
-  // Try main first, fall back to master
+  // Try main first, fall back to master — cache which branch works
   let res = await fetch(`${GITHUB_API}/repos/${repo}/git/trees/main?recursive=1`, {
     headers: headers(token),
   });
-  if (!res.ok) {
+  if (res.ok) {
+    _defaultBranch = 'main';
+  } else {
     res = await fetch(`${GITHUB_API}/repos/${repo}/git/trees/master?recursive=1`, {
       headers: headers(token),
     });
+    if (res.ok) _defaultBranch = 'master';
   }
   if (!res.ok) return [];
   const data = (await res.json()) as { tree: FileEntry[] };
@@ -96,6 +107,36 @@ export async function createNote(
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`Create note failed (${res.status}): ${body}`);
+  }
+}
+
+/**
+ * Upload a binary asset (image) to _assets/ via PUT /contents/{path}.
+ * Content must be base64-encoded. Used for image uploads before note creation.
+ */
+export async function uploadAsset(
+  token: string,
+  repo: string,
+  filename: string,
+  base64Content: string,
+  commitMessage: string,
+): Promise<void> {
+  const path = `_assets/${filename}`;
+
+  const res = await fetch(`${GITHUB_API}/repos/${repo}/contents/${encodeURIComponent(path)}`, {
+    method: 'PUT',
+    headers: headers(token),
+    body: JSON.stringify({
+      message: commitMessage,
+      content: base64Content,
+    }),
+  });
+
+  if (!res.ok) {
+    // 422 means file already exists (dedup) — that's fine, not an error
+    if (res.status === 422) return;
+    const body = await res.text();
+    throw new Error(`Asset upload failed (${res.status}): ${body}`);
   }
 }
 

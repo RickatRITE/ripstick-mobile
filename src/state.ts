@@ -5,6 +5,7 @@ import { getRepoFullName } from './auth';
 import { type MarkerType } from './note-format';
 import { type ParsedNote } from './frontmatter';
 import { type OutboxAsset } from './outbox';
+import { GROUP_DEFAULT } from '../../shared/constants';
 
 // ── localStorage Keys ─────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ export const state: AppState = {
   username: localStorage.getItem(CACHED_USERNAME_KEY) || '',
   repo: getRepoFullName() || '',
   groups: JSON.parse(localStorage.getItem(CACHED_GROUPS_KEY) || '[]'),
-  selectedGroup: localStorage.getItem(LAST_GROUP_KEY) || 'general',
+  selectedGroup: localStorage.getItem(LAST_GROUP_KEY) || GROUP_DEFAULT,
   title: '',
   body: '',
   marker: '',

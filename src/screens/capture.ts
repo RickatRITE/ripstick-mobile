@@ -1,6 +1,7 @@
 /** Capture screen — create new notes with offline-resilient save. */
 
 import { getToken } from '../auth';
+import { processImage } from '../image-utils';
 import { buildFrontmatter, generateFilename, buildCommitMessage, MARKERS, MARKER_MAP, type MarkerType } from '../note-format';
 import { enqueue, saveDraft, clearDraft } from '../outbox';
 import { flushOutbox } from '../sync';
@@ -60,6 +61,12 @@ function optionsPanelHtml(): string {
             <button class="marker-chip ${m.type === state.marker ? 'active' : ''}" data-marker="${m.type}">${m.icon} ${m.label}</button>
           `).join('')}
         </div>
+      </div>
+      <div class="options-section">
+        <button class="attach-image-btn" id="attach-image-btn">
+          ${state.pendingAsset ? '&#128247; Image attached' : '&#128247; Attach image'}
+        </button>
+        <input type="file" accept="image/*" id="image-file-input" style="display:none" />
       </div>
     </div>
   `;
@@ -160,6 +167,33 @@ function bindCaptureEvents(): void {
     });
   });
 
+  // Attach image — trigger hidden file input
+  document.getElementById('attach-image-btn')?.addEventListener('click', () => {
+    document.getElementById('image-file-input')?.click();
+  });
+
+  // Process selected image file
+  document.getElementById('image-file-input')?.addEventListener('change', async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    try {
+      const { filename, webpBytes } = await processImage(file);
+      state.pendingAsset = { filename, data: webpBytes.buffer as ArrayBuffer };
+
+      // Embed image reference in the body
+      const imageMarkdown = `![Image](../_assets/${filename})`;
+      const bodyInput = document.getElementById('body-input') as HTMLTextAreaElement;
+      const currentBody = bodyInput?.value || state.body;
+      state.body = currentBody ? currentBody + '\n\n' + imageMarkdown : imageMarkdown;
+      scheduleDraftSave();
+      render();
+    } catch {
+      state.status = { type: 'error', message: 'Failed to process image.' };
+      render();
+    }
+  });
+
   document.getElementById('title-input')?.addEventListener('input', (e) => {
     state.title = (e.target as HTMLInputElement).value;
     scheduleDraftSave();
@@ -230,6 +264,7 @@ async function handleSave(): Promise<void> {
       createdAt: Date.now(),
       token,
       repo,
+      asset: state.pendingAsset ?? undefined,
     });
 
     // Clear form and draft
@@ -238,6 +273,7 @@ async function handleSave(): Promise<void> {
     state.marker = '';
     state.markerExpanded = false;
     state.optionsPanelOpen = false;
+    state.pendingAsset = null;
     state.status = { type: 'success', message: 'Saved' };
     state.lastSavedPath = null;
     await clearDraft();

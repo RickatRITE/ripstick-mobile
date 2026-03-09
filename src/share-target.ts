@@ -1,11 +1,17 @@
 /**
  * Web Share Target handler — parses incoming shared content and generates
  * smart titles based on known URL patterns (X, YouTube, Reddit, etc.).
+ * Supports both text shares (links, tweets) and image shares (screenshots).
  */
+
+// Must match SHARE_CACHE in public/sw.js
+const SHARE_CACHE = 'ripstick-share-temp';
 
 export interface SharePayload {
   title: string;
   body: string;
+  /** Shared image file, if present. Consumed once then cleared from cache. */
+  imageFile?: File;
 }
 
 interface UrlPattern {
@@ -88,23 +94,58 @@ function sourceName(url: string): string {
   }
 }
 
+/** Format a date for the screenshot title: "Screenshot — Mar 8, 2026" */
+function screenshotTitle(): string {
+  const now = new Date();
+  const formatted = now.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  return `Screenshot — ${formatted}`;
+}
+
+/**
+ * Retrieve a shared image from the service worker's temp cache.
+ * Returns the file, or null if no image was shared. Clears the cache entry.
+ */
+async function consumeSharedImage(): Promise<File | null> {
+  try {
+    const cache = await caches.open(SHARE_CACHE);
+    // Cache key must match sw.js POST handler
+    const response = await cache.match('/ripstick-mobile/shared-image');
+    if (!response) return null;
+
+    // Clean up immediately — one-time consumption
+    await cache.delete('/ripstick-mobile/shared-image');
+
+    const blob = await response.blob();
+    const type = response.headers.get('Content-Type') || 'image/png';
+    return new File([blob], 'shared-image', { type });
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Parse the Web Share Target query params from the current URL.
  * Returns null if no share data is present.
  *
- * The share sheet sends: ?title=...&text=...&url=...
- * - `text` often contains the main content + a URL appended by the sharing app
- * - `url` may duplicate the URL already in `text`
- * - `title` is rarely populated by most apps
+ * Handles both text shares (GET params) and image shares (POST → redirected
+ * to GET with has_image=1, image stored in service worker temp cache).
  */
-export function parseShareTarget(): SharePayload | null {
+export async function parseShareTarget(): Promise<SharePayload | null> {
   const params = new URLSearchParams(window.location.search);
   const rawTitle = params.get('title')?.trim() || '';
   const rawText = params.get('text')?.trim() || '';
   const rawUrl = params.get('url')?.trim() || '';
+  const hasImage = params.get('has_image') === '1';
+
+  // Check for shared image in service worker cache
+  const imageFile = hasImage ? await consumeSharedImage() : null;
 
   // Nothing shared
-  if (!rawTitle && !rawText && !rawUrl) return null;
+  if (!rawTitle && !rawText && !rawUrl && !imageFile) return null;
 
   // Find the canonical URL — prefer explicit `url` param, else extract from text
   const url = rawUrl || extractUrl(rawText) || '';
@@ -116,23 +157,31 @@ export function parseShareTarget(): SharePayload | null {
     body = body.split(url).join('').trim();
   }
 
-  // Title priority: smart title from URL > shared title > first line of body
+  // Title priority: smart title from URL > shared title > screenshot title > first line of body
   let title: string;
   if (url) {
     title = smartTitle(url);
   } else if (rawTitle) {
     title = rawTitle;
+  } else if (imageFile) {
+    title = screenshotTitle();
   } else {
     title = (body.split('\n')[0].slice(0, 80)) || 'Shared Note';
   }
 
-  // Append a visible source breadcrumb — this is the provenance indicator the
-  // user sees in their markdown. They can edit or delete it like any other text.
+  // Append a visible source breadcrumb — provenance indicator the user sees
+  // in their markdown. They can edit or delete it like any other text.
   if (url) {
     const source = sourceName(url);
     const breadcrumb = `*Shared from [${source}](${url})*`;
     body = body ? body + '\n\n' + breadcrumb : breadcrumb;
+  } else if (imageFile) {
+    // Screenshot provenance breadcrumb
+    const now = new Date();
+    const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const breadcrumb = `*Screenshot captured ${time}*`;
+    body = body ? body + '\n\n' + breadcrumb : breadcrumb;
   }
 
-  return { title, body };
+  return { title, body, imageFile: imageFile ?? undefined };
 }

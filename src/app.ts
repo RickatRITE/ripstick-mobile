@@ -3,9 +3,11 @@
 import { getToken, getRepoFullName, validateToken } from './auth';
 import { listGroups } from './api';
 import { destroyEditor } from './editor';
+import { processImage } from './image-utils';
 import { loadDraft } from './outbox';
 import { parseShareTarget } from './share-target';
 import { flushOutbox, refreshSyncHealth } from './sync';
+import { GROUP_DEFAULT } from '../../shared/constants';
 import { state, setRenderFn, render, navigate, CACHED_GROUPS_KEY, CACHED_USERNAME_KEY } from './state';
 import { renderAuth } from './screens/auth';
 import { renderCapture } from './screens/capture';
@@ -34,13 +36,31 @@ setRenderFn(renderScreen);
 
 // ── Share Target ──────────────────────────────────────────────────────
 
-/** Consume Web Share Target params if present, overriding any draft. */
-function consumeShareTarget(): boolean {
-  const shared = parseShareTarget();
+/**
+ * Consume Web Share Target params if present, overriding any draft.
+ * Processes shared images through the WebP pipeline and stores as pendingAsset.
+ */
+async function consumeShareTarget(): Promise<boolean> {
+  const shared = await parseShareTarget();
   if (!shared) return false;
 
   state.title = shared.title;
   state.body = shared.body;
+
+  // Process shared image → WebP conversion + asset filename generation
+  if (shared.imageFile) {
+    try {
+      const { filename, webpBytes } = await processImage(shared.imageFile);
+      state.pendingAsset = { filename, data: webpBytes.buffer as ArrayBuffer };
+      // Embed image reference in the body so the user sees it
+      const imageMarkdown = `![Screenshot](../_assets/${filename})`;
+      state.body = state.body
+        ? imageMarkdown + '\n\n' + state.body
+        : imageMarkdown;
+    } catch {
+      // Image processing failed — continue with text-only share
+    }
+  }
 
   // Clean the URL so a refresh doesn't re-trigger the share
   history.replaceState({ screen: 'capture' }, '', window.location.pathname);
@@ -54,7 +74,12 @@ async function init(): Promise<void> {
   const repo = getRepoFullName();
 
   // Check for incoming share data first — it takes priority over drafts
-  const isShare = consumeShareTarget();
+  let isShare = false;
+  try {
+    isShare = await consumeShareTarget();
+  } catch {
+    // Share target parsing failed — continue with normal boot
+  }
 
   // Restore draft from IndexedDB (skip if we have share data)
   if (!isShare) {
@@ -93,7 +118,7 @@ async function init(): Promise<void> {
       state.groups = groups;
       localStorage.setItem(CACHED_GROUPS_KEY, JSON.stringify(groups));
       if (!groups.includes(state.selectedGroup)) {
-        state.selectedGroup = groups[0] || 'general';
+        state.selectedGroup = groups[0] || GROUP_DEFAULT;
       }
       render();
 

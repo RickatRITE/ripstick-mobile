@@ -4,6 +4,14 @@ import { type MarkerType } from './note-format';
 
 // ── Outbox Schema ────────────────────────────────────────────────────
 
+/** Optional image asset to upload alongside the note. */
+export interface OutboxAsset {
+  /** Asset filename (e.g. `2026-03-08-15-30-00-abc12345.webp`) */
+  filename: string;
+  /** Raw WebP bytes — stored as ArrayBuffer in IndexedDB (no base64 overhead). */
+  data: ArrayBuffer;
+}
+
 export interface OutboxEntry {
   id: number;
   group: string;
@@ -16,6 +24,8 @@ export interface OutboxEntry {
   lastError?: string;
   token: string;
   repo: string;
+  /** Image asset to upload before the note. Cleared after successful upload. */
+  asset?: OutboxAsset;
 }
 
 // ── Draft Schema ─────────────────────────────────────────────────────

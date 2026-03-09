@@ -1,7 +1,7 @@
 /** Edit screen — TipTap editor with options panel matching capture screen. */
 
 import { getToken } from '../auth';
-import { getFileContent, updateFile } from '../api';
+import { getFileContent, updateFile, getDefaultBranch } from '../api';
 import { MARKERS, MARKER_MAP, type MarkerType, buildCommitMessage } from '../note-format';
 import { parseNote, rebuildNote, setMarkerInRaw, toggleDoneInRaw } from '../frontmatter';
 import { createEditor, getMarkdown } from '../editor';
@@ -126,7 +126,7 @@ export function renderEdit(app: HTMLElement): void {
     resolveImageSrc: (relativeSrc) => {
       // ../_assets/foo.webp → _assets/foo.webp
       const assetPath = relativeSrc.replace(/^\.\.\//, '');
-      return `https://raw.githubusercontent.com/${state.repo}/main/${assetPath}`;
+      return `https://raw.githubusercontent.com/${state.repo}/${getDefaultBranch()}/${assetPath}`;
     },
   });
 
