@@ -1,0 +1,67 @@
+/**
+ * BUG-38: Mobile note list shows "undefined NaN, NaN" for dates
+ *
+ * Root cause: formatDate() in recent.ts appended 'T00:00:00' to all input strings,
+ * including full ISO datetimes from the `updated` frontmatter field. This created
+ * invalid date strings like "2026-03-08T10:50:55-05:00T00:00:00", producing
+ * months[NaN] → undefined, getDate() → NaN, getFullYear() → NaN.
+ *
+ * The fix: detect strings that already contain a time component and parse directly,
+ * plus an isNaN guard to return '' instead of garbage.
+ */
+
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock the state module so utils.ts can import without side effects
+vi.mock('./state', () => ({
+  state: { status: null, lastSavedPath: null, repo: null },
+  render: vi.fn(),
+}));
+
+import { formatDate } from './utils';
+
+describe('formatDate', () => {
+  it('BUG-38: handles full ISO datetime strings without producing NaN', () => {
+    // This is the exact scenario that caused "undefined NaN, NaN":
+    // the updated field from frontmatter is a full ISO datetime
+    const result = formatDate('2026-03-08T10:50:55-05:00');
+    expect(result).not.toContain('undefined');
+    expect(result).not.toContain('NaN');
+    expect(result).toMatch(/Mar 8/);
+  });
+
+  it('handles ISO datetime with Z timezone', () => {
+    const result = formatDate('2026-03-08T15:50:55Z');
+    expect(result).not.toContain('NaN');
+    expect(result).toMatch(/Mar/);
+  });
+
+  it('handles ISO datetime with space separator', () => {
+    const result = formatDate('2026-03-08 10:50:55');
+    expect(result).not.toContain('undefined');
+    expect(result).not.toContain('NaN');
+    expect(result).toMatch(/Mar 8/);
+  });
+
+  it('handles date-only strings', () => {
+    const result = formatDate('2026-03-08');
+    expect(result).toMatch(/Mar 8/);
+  });
+
+  it('returns empty string for empty input', () => {
+    expect(formatDate('')).toBe('');
+  });
+
+  it('returns empty string for NO_DATE sentinel', () => {
+    expect(formatDate('0000-00-00')).toBe('');
+  });
+
+  it('returns empty string for garbage input', () => {
+    expect(formatDate('not-a-date')).toBe('');
+  });
+
+  it('includes year for dates not in the current year', () => {
+    const result = formatDate('2020-06-15');
+    expect(result).toBe('Jun 15, 2020');
+  });
+});

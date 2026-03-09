@@ -4,26 +4,7 @@ import { getToken } from '../auth';
 import { getAllFiles, getFileContent } from '../api';
 import { parseNote } from '../frontmatter';
 import { state, render, navigate, disconnect, type NoteListItem } from '../state';
-import { escapeHtml } from '../utils';
-
-/** Sentinel for notes with no parseable date in their filename. */
-const NO_DATE = '0000-00-00';
-
-/** Format a date string for display: "Mar 8" or "Mar 8, 2025" if not this year. */
-function formatDate(dateStr: string): string {
-  if (!dateStr || dateStr === NO_DATE) return '';
-  try {
-    const d = new Date(dateStr + 'T00:00:00');
-    const now = new Date();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[d.getMonth()];
-    const day = d.getDate();
-    if (d.getFullYear() === now.getFullYear()) return `${month} ${day}`;
-    return `${month} ${day}, ${d.getFullYear()}`;
-  } catch {
-    return dateStr;
-  }
-}
+import { escapeHtml, formatDate, NO_DATE } from '../utils';
 
 /** Render a single note list item in Gmail style. */
 function noteItemHtml(n: NoteListItem): string {
@@ -52,7 +33,7 @@ export function renderRecent(app: HTMLElement): void {
           <span class="tab active">Recent</span>
         </div>
         <div class="header-actions">
-          <span style="font-size:10px;color:var(--fg-muted)">v15</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v16</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
