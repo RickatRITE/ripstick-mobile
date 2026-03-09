@@ -307,18 +307,6 @@ textarea {
   color: var(--fg-on-accent);
 }
 
-.marker-toggle {
-  font-size: var(--font-sm);
-  color: var(--fg-muted);
-  cursor: pointer;
-  padding: 4px 0;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.marker-toggle:hover {
-  color: var(--fg);
-}
-
 .marker-picker {
   display: flex;
   gap: var(--gap-sm);
@@ -487,83 +475,6 @@ textarea {
   gap: 8px;
 }
 
-.back-link {
-  font-size: 14px;
-  color: var(--accent);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.edit-title {
-  font-size: 15px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  text-align: center;
-  padding: 0 8px;
-}
-
-/* ── Triage bar ───────────────────────────────────────────────── */
-
-.triage-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.triage-markers {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.triage-chip {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--fg);
-  font-size: 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
-  transition: all 0.15s;
-}
-
-.triage-chip.active {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--fg-on-accent);
-}
-
-.triage-done {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--fg-muted);
-  cursor: pointer;
-  white-space: nowrap;
-  -webkit-tap-highlight-color: transparent;
-  transition: all 0.15s;
-}
-
-.triage-done.is-done {
-  background: var(--success);
-  border-color: var(--success);
-  color: var(--fg-on-accent);
-}
-
 .editor-container {
   flex: 1;
   display: flex;
@@ -663,6 +574,38 @@ textarea {
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+.tiptap-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  margin: 8px 0;
+}
+
+/* ── Attach Image Button ──────────────────────────────────────── */
+
+.attach-image-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s;
+  width: 100%;
+  justify-content: center;
+}
+
+.attach-image-btn:active {
+  background: var(--bg-input);
+  color: var(--fg);
+  border-color: var(--accent);
 }
 
 /* ── Sync Dot ─────────────────────────────────────────────────────── */
@@ -794,8 +737,3 @@ textarea {
   color: var(--error);
 }
 
-/* ── Form Footer (edit screen status) ─────────────────────────────── */
-
-.form-footer {
-  padding: 8px 0;
-}

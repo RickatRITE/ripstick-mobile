@@ -4,6 +4,7 @@ import { clearToken } from './auth';
 import { getRepoFullName } from './auth';
 import { type MarkerType } from './note-format';
 import { type ParsedNote } from './frontmatter';
+import { type OutboxAsset } from './outbox';
 
 // ── localStorage Keys ─────────────────────────────────────────────────
 
@@ -52,6 +53,11 @@ export interface AppState {
   recentLoading: boolean;
   editNote: { path: string; sha: string; parsed: ParsedNote; raw: string } | null;
   editSaving: boolean;
+  editOptionsPanelOpen: boolean;
+  /** Tracks the edited title (null = not yet touched, uses parsed.title) */
+  editTitle: string | null;
+  // Image attachment (shared screenshot or file picker)
+  pendingAsset: OutboxAsset | null;
   // Sync
   syncHealth: SyncHealth;
   toast: string | null;
@@ -73,10 +79,13 @@ export const state: AppState = {
   saving: false,
   status: null,
   lastSavedPath: null,
+  pendingAsset: null,
   recentNotes: [],
   recentLoading: false,
   editNote: null,
   editSaving: false,
+  editOptionsPanelOpen: false,
+  editTitle: null,
   syncHealth: 'green',
   toast: null,
 };

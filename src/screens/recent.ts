@@ -33,7 +33,7 @@ export function renderRecent(app: HTMLElement): void {
           <span class="tab active">Recent</span>
         </div>
         <div class="header-actions">
-          <span style="font-size:10px;color:var(--fg-muted)">v18</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v20</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -163,6 +163,8 @@ async function openNote(path: string): Promise<void> {
     const parsed = parseNote(content);
 
     state.editNote = { path, sha, parsed, raw: content };
+    state.editTitle = null;
+    state.editOptionsPanelOpen = false;
     state.status = null;
   } catch (e) {
     state.status = { type: 'error', message: 'Failed to load note.' };

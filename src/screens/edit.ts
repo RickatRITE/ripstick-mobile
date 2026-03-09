@@ -1,75 +1,179 @@
-/** Edit screen — TipTap editor + triage actions. */
+/** Edit screen — TipTap editor with options panel matching capture screen. */
 
 import { getToken } from '../auth';
 import { getFileContent, updateFile } from '../api';
 import { MARKERS, MARKER_MAP, type MarkerType, buildCommitMessage } from '../note-format';
 import { parseNote, rebuildNote, setMarkerInRaw, toggleDoneInRaw } from '../frontmatter';
-import { createEditor, getMarkdown, destroyEditor } from '../editor';
-import { state, render, navigate } from '../state';
+import { createEditor, getMarkdown } from '../editor';
+import { state, render } from '../state';
 import { escapeHtml, clearStatusAfterDelay } from '../utils';
+
+// ── Helpers ─────────────────────────────────────────────────────────
+
+/** Extract the group (folder) name from a note path like "general/2025-03-08-abc.md". */
+function noteGroup(): string {
+  if (!state.editNote) return '';
+  const slash = state.editNote.path.indexOf('/');
+  return slash > 0 ? state.editNote.path.slice(0, slash) : '';
+}
+
+/** The current effective title — edited value if touched, otherwise parsed. */
+function effectiveTitle(): string {
+  return state.editTitle ?? state.editNote?.parsed.title ?? '';
+}
+
+/** The current effective marker from parsed state. */
+function currentMarker(): MarkerType | '' {
+  return (state.editNote?.parsed.marker || '') as MarkerType | '';
+}
+
+// ── Options Panel ───────────────────────────────────────────────────
+
+function optionsSummary(): string {
+  const parts: string[] = [];
+  const group = noteGroup();
+  if (group) parts.push(group);
+  const marker = currentMarker();
+  if (marker) {
+    const m = MARKER_MAP[marker];
+    if (m) parts.push(`${m.icon} ${m.label}`);
+  }
+  if (state.editNote?.parsed.done) parts.push('✓ Done');
+  return parts.length > 0 ? parts.join(' · ') : '';
+}
+
+function optionsPanelHtml(): string {
+  if (!state.editOptionsPanelOpen) return '';
+
+  const marker = currentMarker();
+  const parsed = state.editNote!.parsed;
+
+  return `
+    <div class="options-panel" id="options-panel">
+      <div class="options-section">
+        <div class="options-label">Folder</div>
+        <div class="group-picker">
+          <span class="group-chip active">${escapeHtml(noteGroup())}</span>
+        </div>
+      </div>
+      <div class="options-section">
+        <div class="options-label">Marker</div>
+        <div class="marker-picker">
+          <button class="marker-chip ${marker === '' ? 'active' : ''}" data-marker="">None</button>
+          ${MARKERS.map((m) => `
+            <button class="marker-chip ${m.type === marker ? 'active' : ''}" data-marker="${m.type}">${m.icon} ${m.label}</button>
+          `).join('')}
+        </div>
+      </div>
+      ${marker ? `
+        <div class="options-section">
+          <div class="marker-picker">
+            <button class="marker-chip ${parsed.done ? 'active' : ''}" id="done-toggle-btn">
+              ${parsed.done ? '✓ Done' : 'Mark done'}
+            </button>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// ── Render ───────────────────────────────────────────────────────────
 
 export function renderEdit(app: HTMLElement): void {
   if (!state.editNote) return;
 
-  const { parsed } = state.editNote;
+  const summary = optionsSummary();
+  const title = effectiveTitle();
 
   app.innerHTML = `
     <div class="edit-screen">
       <div class="header">
-        <span class="back-link" id="back-btn">← Back</span>
-        <span class="edit-title">${escapeHtml(parsed.title || 'Untitled')}</span>
-        <span class="settings-link" id="save-edit-btn">${state.editSaving ? 'Saving...' : 'Save'}</span>
+        <div class="header-actions">
+          <button class="header-icon-btn" id="back-btn" title="Back">
+            <span class="icon-label">&#8592;</span>
+          </button>
+        </div>
+        <div class="header-actions">
+          <button class="header-icon-btn ${state.editOptionsPanelOpen ? 'active' : ''}" id="options-toggle-btn" title="Options">
+            <span class="icon-label">&#9881;</span>
+          </button>
+          <button class="header-icon-btn save-icon-btn" id="save-edit-btn" ${state.editSaving ? 'disabled' : ''} title="Save note">
+            <span class="icon-label">${state.editSaving ? '...' : '&#10003;'}</span>
+          </button>
+        </div>
       </div>
 
-      <div class="triage-bar">
-        <div class="triage-markers">
-          <button class="triage-chip ${!parsed.marker ? 'active' : ''}" data-triage-marker="">—</button>
-          ${MARKERS.map((m) => `
-            <button class="triage-chip ${m.type === parsed.marker ? 'active' : ''}" data-triage-marker="${m.type}">${m.icon}</button>
-          `).join('')}
-        </div>
-        ${parsed.marker ? `
-          <button class="triage-done ${parsed.done ? 'is-done' : ''}" id="triage-done-btn">
-            ${parsed.done ? '✓ Done' : 'Mark done'}
-          </button>
-        ` : ''}
-      </div>
+      ${summary && !state.editOptionsPanelOpen ? `<div class="options-summary" id="options-summary">${escapeHtml(summary)}</div>` : ''}
+
+      ${optionsPanelHtml()}
+
+      ${state.status ? `<div class="status-message status-${state.status.type}">${escapeHtml(state.status.message)}</div>` : ''}
+
+      <input type="text" class="title-input" id="edit-title-input" value="${escapeHtml(title)}" placeholder="Title" />
 
       <div class="editor-container" id="editor-mount"></div>
-
-      <div class="form-footer">
-        ${state.status ? `<div class="status-message status-${state.status.type}">${state.status.message}</div>` : ''}
-      </div>
     </div>
   `;
 
   // Mount TipTap editor
   const mount = document.getElementById('editor-mount')!;
-  let editBody = parsed.body;
-  if (parsed.marker && editBody.trimStart().startsWith('<!--')) {
+  let editBody = state.editNote.parsed.body;
+  if (state.editNote.parsed.marker && editBody.trimStart().startsWith('<!--')) {
     editBody = editBody.replace(/^<!--\s*rs:[^\n]*-->\r?\n?/, '');
   }
-  createEditor(mount, editBody);
+  createEditor(mount, editBody, {
+    resolveImageSrc: (relativeSrc) => {
+      // ../_assets/foo.webp → _assets/foo.webp
+      const assetPath = relativeSrc.replace(/^\.\.\//, '');
+      return `https://raw.githubusercontent.com/${state.repo}/main/${assetPath}`;
+    },
+  });
 
-  // Back button — use history.back() so it pops the history entry
+  bindEditEvents();
+}
+
+// ── Events ──────────────────────────────────────────────────────────
+
+function bindEditEvents(): void {
+  // Back button
   document.getElementById('back-btn')!.addEventListener('click', () => {
     history.back();
   });
 
-  // Save content edit
+  // Save
   document.getElementById('save-edit-btn')!.addEventListener('click', handleSaveEdit);
 
-  // Triage: marker type change
-  document.querySelectorAll('.triage-chip').forEach((el) => {
+  // Title editing
+  document.getElementById('edit-title-input')?.addEventListener('input', (e) => {
+    state.editTitle = (e.target as HTMLInputElement).value;
+  });
+
+  // Options toggle
+  document.getElementById('options-toggle-btn')?.addEventListener('click', () => {
+    state.editOptionsPanelOpen = !state.editOptionsPanelOpen;
+    render();
+  });
+
+  // Options summary also opens panel
+  document.getElementById('options-summary')?.addEventListener('click', () => {
+    state.editOptionsPanelOpen = true;
+    render();
+  });
+
+  // Marker chips (inside options panel)
+  document.querySelectorAll('.marker-chip[data-marker]').forEach((el) => {
     el.addEventListener('click', () => {
-      const newMarker = (el as HTMLElement).dataset.triageMarker || '';
-      handleTriageMarker(newMarker as MarkerType | '');
+      const newMarker = ((el as HTMLElement).dataset.marker || '') as MarkerType | '';
+      handleTriageMarker(newMarker);
     });
   });
 
-  // Triage: done toggle
-  document.getElementById('triage-done-btn')?.addEventListener('click', handleTriageDone);
+  // Done toggle (inside options panel)
+  document.getElementById('done-toggle-btn')?.addEventListener('click', handleTriageDone);
 }
+
+// ── Save ────────────────────────────────────────────────────────────
 
 /** Shared save-commit-refresh cycle for all edit-screen mutations. */
 async function saveEditMutation(
@@ -91,6 +195,8 @@ async function saveEditMutation(
     state.editNote.raw = updated.content;
     state.editNote.sha = updated.sha;
     state.editNote.parsed = parseNote(updated.content);
+    // Reset editTitle to track the freshly saved value
+    state.editTitle = null;
     state.status = { type: 'success', message: successMessage };
   } catch (e) {
     state.status = { type: 'error', message: `Save failed: ${e}` };
@@ -107,8 +213,15 @@ async function handleSaveEdit(): Promise<void> {
     if (note.parsed.marker && note.parsed.markerLine) {
       markdown = `${note.parsed.markerLine}\n${markdown}`;
     }
+
+    // Apply title change if the user edited it
+    const editedTitle = effectiveTitle();
+    const parsed = editedTitle !== note.parsed.title
+      ? { ...note.parsed, title: editedTitle }
+      : note.parsed;
+
     return {
-      content: rebuildNote(note.parsed, markdown),
+      content: rebuildNote(parsed, markdown),
       commitMessage: buildCommitMessage({ action: 'content-edit', file: note.path, detail: 'Edited on mobile' }),
       successMessage: 'Saved',
     };
