@@ -1,9 +1,47 @@
-/** Recent notes screen — list and open notes. */
+/** Recent notes screen — Gmail-style note list. */
 
 import { getToken } from '../auth';
 import { getAllFiles, getFileContent } from '../api';
 import { parseNote } from '../frontmatter';
 import { state, render, navigate, disconnect, type NoteListItem } from '../state';
+import { escapeHtml } from '../utils';
+
+/** Sentinel for notes with no parseable date in their filename. */
+const NO_DATE = '0000-00-00';
+
+/** Format a date string for display: "Mar 8" or "Mar 8, 2025" if not this year. */
+function formatDate(dateStr: string): string {
+  if (!dateStr || dateStr === NO_DATE) return '';
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    const now = new Date();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[d.getMonth()];
+    const day = d.getDate();
+    if (d.getFullYear() === now.getFullYear()) return `${month} ${day}`;
+    return `${month} ${day}, ${d.getFullYear()}`;
+  } catch {
+    return dateStr;
+  }
+}
+
+/** Render a single note list item in Gmail style. */
+function noteItemHtml(n: NoteListItem): string {
+  const title = n.title || n.filename.replace('.md', '');
+  const date = formatDate(n.updated || n.date);
+  const snippet = n.snippet ? escapeHtml(n.snippet) : '';
+
+  return `
+    <button class="gmail-item" data-path="${n.path}">
+      <div class="gmail-item-top">
+        <span class="gmail-item-group">${escapeHtml(n.group)}</span>
+        <span class="gmail-item-date">${date}</span>
+      </div>
+      <div class="gmail-item-title">${escapeHtml(title)}</div>
+      ${snippet ? `<div class="gmail-item-snippet">${snippet}</div>` : ''}
+    </button>
+  `;
+}
 
 export function renderRecent(app: HTMLElement): void {
   app.innerHTML = `
@@ -13,8 +51,8 @@ export function renderRecent(app: HTMLElement): void {
           <span class="tab" id="tab-new">New</span>
           <span class="tab active">Recent</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--fg-muted)">v14</span>
+        <div class="header-actions">
+          <span style="font-size:10px;color:var(--fg-muted)">v15</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
@@ -22,14 +60,9 @@ export function renderRecent(app: HTMLElement): void {
       ${state.recentLoading ? `
         <div class="loading-indicator">Loading notes...</div>
       ` : `
-        <div class="note-list">
+        <div class="gmail-list">
           ${state.recentNotes.length === 0 ? '<div class="empty-state">No notes found</div>' : ''}
-          ${state.recentNotes.map((n) => `
-            <button class="note-list-item" data-path="${n.path}">
-              <span class="note-item-group">${n.group}</span>
-              <span class="note-item-name" data-title-path="${n.path}">${n.title || n.filename.replace('.md', '')}</span>
-            </button>
-          `).join('')}
+          ${state.recentNotes.map(noteItemHtml).join('')}
         </div>
       `}
     </div>
@@ -41,7 +74,7 @@ export function renderRecent(app: HTMLElement): void {
   });
   document.getElementById('signout-btn')?.addEventListener('click', () => disconnect());
 
-  document.querySelectorAll('.note-list-item').forEach((el) => {
+  document.querySelectorAll('.gmail-item').forEach((el) => {
     el.addEventListener('click', () => {
       const path = (el as HTMLElement).dataset.path!;
       openNote(path);
@@ -74,7 +107,7 @@ export async function loadRecentNotes(): Promise<void> {
           group,
           filename,
           sha: f.sha,
-          date: dateMatch ? dateMatch[1] : '0000-00-00',
+          date: dateMatch ? dateMatch[1] : NO_DATE,
         };
       });
 
@@ -92,7 +125,7 @@ export async function loadRecentNotes(): Promise<void> {
   state.recentLoading = false;
   render();
 
-  // Fetch titles in background for notes that don't have one yet
+  // Fetch titles + snippets in background
   if (token && state.recentNotes.length > 0) {
     fetchTitles(token);
   }
@@ -111,6 +144,15 @@ async function fetchTitles(token: string): Promise<void> {
         const parsed = parseNote(content);
         if (parsed.title) note.title = parsed.title;
         if (parsed.updated) note.updated = parsed.updated;
+        // Extract a short snippet from the body
+        if (parsed.body) {
+          const plain = parsed.body
+            .replace(/<!--[\s\S]*?-->/g, '')  // strip HTML comments (markers)
+            .replace(/[#*_~`>\-\[\]]/g, '')   // strip markdown formatting
+            .replace(/\s+/g, ' ')             // collapse whitespace
+            .trim();
+          note.snippet = plain.slice(0, 100);
+        }
       } catch {
         // Silently skip — filename stays as fallback
       }
@@ -142,7 +184,7 @@ async function openNote(path: string): Promise<void> {
     state.editNote = { path, sha, parsed, raw: content };
     state.status = null;
   } catch (e) {
-    state.status = { type: 'error', message: `Failed to load note: ${e}` };
+    state.status = { type: 'error', message: 'Failed to load note.' };
     state.screen = 'recent';
   }
   render();

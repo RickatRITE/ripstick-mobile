@@ -16,7 +16,12 @@
   --success: #4caf50;
   --error: #f44336;
   --amber: #f5a623;
+  --fg-on-accent: #fff;
+  --shadow: 0 4px 12px rgba(0,0,0,0.3);
   --radius: 8px;
+  --gap-sm: 6px;
+  --font-xs: 11px;
+  --font-sm: 13px;
 }
 
 body {
@@ -44,7 +49,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .tab-bar {
@@ -67,6 +72,101 @@ body {
   border-bottom-color: var(--accent);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Header Icon Buttons ──────────────────────────────────────── */
+
+.header-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-card);
+  color: var(--fg-muted);
+  font-size: 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.header-icon-btn:active {
+  background: var(--bg-input);
+}
+
+.header-icon-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.header-icon-btn .icon-label {
+  line-height: 1;
+}
+
+.save-icon-btn {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.save-icon-btn:active {
+  background: var(--accent);
+  color: var(--fg-on-accent);
+}
+
+.save-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Options Summary (collapsed state) ────────────────────────── */
+
+.options-summary {
+  font-size: 12px;
+  color: var(--fg-muted);
+  padding: 4px 0 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.options-summary:active {
+  color: var(--fg);
+}
+
+/* ── Options Panel (group + marker pickers) ───────────────────── */
+
+.options-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.options-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+
+.options-label {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* ── Buttons ───────────────────────────────────────────────────── */
 
 .btn {
@@ -85,7 +185,7 @@ body {
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--fg-on-accent);
 }
 
 .btn-primary:hover, .btn-primary:active {
@@ -119,7 +219,7 @@ body {
 }
 
 .auth-screen p {
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: var(--fg-muted);
   text-align: center;
   line-height: 1.5;
@@ -128,7 +228,7 @@ body {
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--gap-sm);
 }
 
 .input-group label {
@@ -169,26 +269,26 @@ textarea {
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
-  padding-bottom: 64px;
+  padding-bottom: 16px;
 }
 
 .body-group {
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 6px;
+  gap: var(--gap-sm);
 }
 
 .group-picker {
   display: flex;
-  gap: 6px;
+  gap: var(--gap-sm);
   flex-wrap: wrap;
 }
 
 .group-chip {
   padding: 5px 10px;
   border-radius: 16px;
-  font-size: 13px;
+  font-size: var(--font-sm);
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--fg);
@@ -204,11 +304,11 @@ textarea {
 .group-chip.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--fg-on-accent);
 }
 
 .marker-toggle {
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: var(--fg-muted);
   cursor: pointer;
   padding: 4px 0;
@@ -221,7 +321,7 @@ textarea {
 
 .marker-picker {
   display: flex;
-  gap: 6px;
+  gap: var(--gap-sm);
   flex-wrap: wrap;
 }
 
@@ -239,20 +339,7 @@ textarea {
 .marker-chip.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
-}
-
-.form-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px 16px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
-  background: var(--bg);
-  z-index: 10;
-  max-width: 480px;
-  margin: 0 auto;
+  color: var(--fg-on-accent);
 }
 
 /* ── Title input ───────────────────────────────────────────────── */
@@ -260,8 +347,8 @@ textarea {
 .title-input {
   border: none;
   background: transparent;
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
   padding: 8px 0;
   color: var(--fg);
   border-bottom: 1px solid transparent;
@@ -281,7 +368,7 @@ textarea {
 
 .status-message {
   text-align: center;
-  font-size: 13px;
+  font-size: var(--font-sm);
   padding: 8px;
   border-radius: var(--radius);
 }
@@ -303,7 +390,7 @@ textarea {
 /* ── Settings / Sign out link ──────────────────────────────────── */
 
 .settings-link {
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: var(--fg-muted);
   text-decoration: none;
   cursor: pointer;
@@ -313,47 +400,75 @@ textarea {
   color: var(--fg);
 }
 
-/* ── Recent Notes List ─────────────────────────────────────────── */
+/* ── Gmail-Style Note List ────────────────────────────────────── */
 
-.note-list {
+.gmail-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   flex: 1;
   overflow-y: auto;
 }
 
-.note-list-item {
+.gmail-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 10px 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  padding: 12px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   text-align: left;
   color: var(--fg);
   -webkit-tap-highlight-color: transparent;
   transition: background 0.1s;
+  width: 100%;
 }
 
-.note-list-item:active {
-  background: var(--bg-input);
+.gmail-item:last-child {
+  border-bottom: none;
 }
 
-.note-item-group {
-  font-size: 11px;
+.gmail-item:active {
+  background: var(--bg-card);
+}
+
+.gmail-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gmail-item-group {
+  font-size: var(--font-xs);
   color: var(--fg-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.note-item-name {
-  font-size: 14px;
+.gmail-item-date {
+  font-size: var(--font-xs);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gmail-item-title {
+  font-size: 15px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.gmail-item-snippet {
+  font-size: var(--font-sm);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .loading-indicator, .empty-state {
@@ -427,7 +542,7 @@ textarea {
 .triage-chip.active {
   border-color: var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: var(--fg-on-accent);
 }
 
 .triage-done {
@@ -446,7 +561,7 @@ textarea {
 .triage-done.is-done {
   background: var(--success);
   border-color: var(--success);
-  color: #fff;
+  color: var(--fg-on-accent);
 }
 
 .editor-container {
@@ -493,7 +608,7 @@ textarea {
 .tiptap-editor ul[data-type="taskList"] li {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--gap-sm);
 }
 
 .tiptap-editor ul[data-type="taskList"] li label {
@@ -511,7 +626,7 @@ textarea {
   background: var(--bg-card);
   padding: 2px 5px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: var(--font-sm);
 }
 
 .tiptap-editor pre {
@@ -589,12 +704,12 @@ textarea {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: var(--fg);
   text-align: center;
   cursor: pointer;
   z-index: 20;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: var(--shadow);
 }
 
 /* ── Outbox View ──────────────────────────────────────────────────── */
@@ -643,14 +758,14 @@ textarea {
 }
 
 .outbox-item-group {
-  font-size: 11px;
+  font-size: var(--font-xs);
   color: var(--fg-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .outbox-status {
-  font-size: 11px;
+  font-size: var(--font-xs);
   white-space: nowrap;
 }
 
@@ -677,4 +792,10 @@ textarea {
 .outbox-item-delete:active {
   background: var(--bg-input);
   color: var(--error);
+}
+
+/* ── Form Footer (edit screen status) ─────────────────────────────── */
+
+.form-footer {
+  padding: 8px 0;
 }

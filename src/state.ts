@@ -28,6 +28,8 @@ export interface NoteListItem {
   title?: string;
   /** Frontmatter updated timestamp, fetched asynchronously */
   updated?: string;
+  /** Body preview snippet, fetched asynchronously */
+  snippet?: string;
 }
 
 export interface AppState {
@@ -41,6 +43,7 @@ export interface AppState {
   body: string;
   marker: MarkerType | '';
   markerExpanded: boolean;
+  optionsPanelOpen: boolean;
   saving: boolean;
   status: { type: 'success' | 'error' | 'info'; message: string } | null;
   lastSavedPath: string | null;
@@ -66,6 +69,7 @@ export const state: AppState = {
   body: '',
   marker: '',
   markerExpanded: false,
+  optionsPanelOpen: false,
   saving: false,
   status: null,
   lastSavedPath: null,

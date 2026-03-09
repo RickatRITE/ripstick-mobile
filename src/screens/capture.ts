@@ -25,10 +25,50 @@ function toastHtml(): string {
   return `<div class="toast" id="toast-bar">${escapeHtml(state.toast)}</div>`;
 }
 
+// ── Options Panel (group + marker pickers) ───────────────────────────
+
+function optionsSummary(): string {
+  const parts: string[] = [];
+  if (state.selectedGroup) parts.push(state.selectedGroup);
+  if (state.marker) {
+    const m = MARKER_MAP[state.marker];
+    if (m) parts.push(`${m.icon} ${m.label}`);
+  }
+  return parts.length > 0 ? parts.join(' · ') : '';
+}
+
+function optionsPanelHtml(): string {
+  if (!state.optionsPanelOpen) return '';
+
+  const markerLabel = state.marker ? MARKER_MAP[state.marker] : null;
+
+  return `
+    <div class="options-panel" id="options-panel">
+      <div class="options-section">
+        <div class="options-label">Folder</div>
+        <div class="group-picker">
+          ${state.groups.map((g) => `
+            <button class="group-chip ${g === state.selectedGroup ? 'active' : ''}" data-group="${g}">${g}</button>
+          `).join('')}
+        </div>
+      </div>
+      <div class="options-section">
+        <div class="options-label">Marker</div>
+        <div class="marker-picker">
+          <button class="marker-chip ${state.marker === '' ? 'active' : ''}" data-marker="">None</button>
+          ${MARKERS.map((m) => `
+            <button class="marker-chip ${m.type === state.marker ? 'active' : ''}" data-marker="${m.type}">${m.icon} ${m.label}</button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // ── Render ───────────────────────────────────────────────────────────
 
 export function renderCapture(app: HTMLElement): void {
-  const markerLabel = state.marker ? MARKER_MAP[state.marker] : null;
+  const summary = optionsSummary();
 
   app.innerHTML = `
     <div class="capture-screen">
@@ -37,41 +77,28 @@ export function renderCapture(app: HTMLElement): void {
           <span class="tab active">New</span>
           <span class="tab" id="tab-recent">Recent</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div class="header-actions">
+          <button class="header-icon-btn ${state.optionsPanelOpen ? 'active' : ''}" id="options-toggle-btn" title="Options">
+            <span class="icon-label">&#9881;</span>
+          </button>
+          <button class="header-icon-btn save-icon-btn" id="save-btn" ${state.saving ? 'disabled' : ''} title="Save note">
+            <span class="icon-label">${state.saving ? '...' : '&#10003;'}</span>
+          </button>
           ${syncDotHtml()}
-          <span style="font-size:10px;color:var(--fg-muted)">v14</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
 
-      <div class="group-picker">
-        ${state.groups.map((g) => `
-          <button class="group-chip ${g === state.selectedGroup ? 'active' : ''}" data-group="${g}">${g}</button>
-        `).join('')}
-      </div>
+      ${summary && !state.optionsPanelOpen ? `<div class="options-summary" id="options-summary">${escapeHtml(summary)}</div>` : ''}
+
+      ${optionsPanelHtml()}
+
+      ${state.status ? `<div class="status-message status-${state.status.type}">${escapeHtml(state.status.message)}</div>` : ''}
 
       <input type="text" class="title-input" id="title-input" value="${escapeHtml(state.title)}" placeholder="Title" />
 
       <div class="body-group">
         <textarea id="body-input" placeholder="Write your note...">${escapeHtml(state.body)}</textarea>
-      </div>
-
-      ${state.markerExpanded ? `
-        <div class="marker-picker">
-          <button class="marker-chip ${state.marker === '' ? 'active' : ''}" data-marker="">None</button>
-          ${MARKERS.map((m) => `
-            <button class="marker-chip ${m.type === state.marker ? 'active' : ''}" data-marker="${m.type}">${m.icon} ${m.label}</button>
-          `).join('')}
-        </div>
-      ` : `
-        <span class="marker-toggle" id="marker-toggle">${markerLabel ? `${markerLabel.icon} ${markerLabel.label} ✕` : '+ Add marker'}</span>
-      `}
-
-      <div class="form-footer">
-        ${state.status ? `<div class="status-message status-${state.status.type}" style="margin-bottom: 8px">${escapeHtml(state.status.message)}</div>` : ''}
-        <button class="btn btn-primary" id="save-btn" ${state.saving ? 'disabled' : ''} style="width: 100%">
-          ${state.saving ? 'Saving...' : 'Save Note'}
-        </button>
       </div>
 
       ${toastHtml()}
@@ -102,6 +129,19 @@ function bindCaptureEvents(): void {
     navigate('outbox');
   });
 
+  // Options toggle
+  document.getElementById('options-toggle-btn')?.addEventListener('click', () => {
+    state.optionsPanelOpen = !state.optionsPanelOpen;
+    render();
+  });
+
+  // Options summary also opens panel
+  document.getElementById('options-summary')?.addEventListener('click', () => {
+    state.optionsPanelOpen = true;
+    render();
+  });
+
+  // Group chips (inside options panel)
   document.querySelectorAll('.group-chip').forEach((el) => {
     el.addEventListener('click', () => {
       state.selectedGroup = (el as HTMLElement).dataset.group!;
@@ -111,37 +151,24 @@ function bindCaptureEvents(): void {
     });
   });
 
-  if (state.markerExpanded) {
-    document.querySelectorAll('.marker-chip').forEach((el) => {
-      el.addEventListener('click', () => {
-        state.marker = ((el as HTMLElement).dataset.marker || '') as MarkerType | '';
-        state.markerExpanded = false;
-        scheduleDraftSave();
-        render();
-      });
+  // Marker chips (inside options panel)
+  document.querySelectorAll('.marker-chip').forEach((el) => {
+    el.addEventListener('click', () => {
+      state.marker = ((el as HTMLElement).dataset.marker || '') as MarkerType | '';
+      scheduleDraftSave();
+      render();
     });
-  } else {
-    document.getElementById('marker-toggle')?.addEventListener('click', () => {
-      if (state.marker) {
-        state.marker = '';
-        scheduleDraftSave();
-        render();
-      } else {
-        state.markerExpanded = true;
-        render();
-      }
-    });
-  }
+  });
 
-  document.getElementById('title-input')!.addEventListener('input', (e) => {
+  document.getElementById('title-input')?.addEventListener('input', (e) => {
     state.title = (e.target as HTMLInputElement).value;
     scheduleDraftSave();
   });
-  document.getElementById('body-input')!.addEventListener('input', (e) => {
+  document.getElementById('body-input')?.addEventListener('input', (e) => {
     state.body = (e.target as HTMLTextAreaElement).value;
     scheduleDraftSave();
   });
-  document.getElementById('save-btn')!.addEventListener('click', handleSave);
+  document.getElementById('save-btn')?.addEventListener('click', handleSave);
 }
 
 // ── Draft Persistence ────────────────────────────────────────────────
@@ -210,6 +237,7 @@ async function handleSave(): Promise<void> {
     state.body = '';
     state.marker = '';
     state.markerExpanded = false;
+    state.optionsPanelOpen = false;
     state.status = { type: 'success', message: 'Saved' };
     state.lastSavedPath = null;
     await clearDraft();
