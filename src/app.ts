@@ -4,6 +4,7 @@ import { getToken, getRepoFullName, validateToken } from './auth';
 import { listGroups } from './api';
 import { destroyEditor } from './editor';
 import { loadDraft } from './outbox';
+import { parseShareTarget } from './share-target';
 import { flushOutbox, refreshSyncHealth } from './sync';
 import { state, setRenderFn, render, navigate, CACHED_GROUPS_KEY, CACHED_USERNAME_KEY } from './state';
 import { renderAuth } from './screens/auth';
@@ -31,23 +32,43 @@ function renderScreen(): void {
 
 setRenderFn(renderScreen);
 
+// ── Share Target ──────────────────────────────────────────────────────
+
+/** Consume Web Share Target params if present, overriding any draft. */
+function consumeShareTarget(): boolean {
+  const shared = parseShareTarget();
+  if (!shared) return false;
+
+  state.title = shared.title;
+  state.body = shared.body;
+
+  // Clean the URL so a refresh doesn't re-trigger the share
+  history.replaceState({ screen: 'capture' }, '', window.location.pathname);
+  return true;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────
 
 async function init(): Promise<void> {
   const token = getToken();
   const repo = getRepoFullName();
 
-  // Restore draft from IndexedDB
-  try {
-    const draft = await loadDraft();
-    if (draft) {
-      state.title = draft.title;
-      state.body = draft.body;
-      state.marker = draft.marker;
-      if (draft.group) state.selectedGroup = draft.group;
+  // Check for incoming share data first — it takes priority over drafts
+  const isShare = consumeShareTarget();
+
+  // Restore draft from IndexedDB (skip if we have share data)
+  if (!isShare) {
+    try {
+      const draft = await loadDraft();
+      if (draft) {
+        state.title = draft.title;
+        state.body = draft.body;
+        state.marker = draft.marker;
+        if (draft.group) state.selectedGroup = draft.group;
+      }
+    } catch {
+      // Draft restore is best-effort
     }
-  } catch {
-    // Draft restore is best-effort
   }
 
   // Show cached UI immediately if we have cached state

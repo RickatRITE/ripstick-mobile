@@ -6,6 +6,15 @@
   "display": "standalone",
   "background_color": "#181818",
   "theme_color": "#181818",
+  "share_target": {
+    "action": "/ripstick-mobile/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "/ripstick-mobile/icon-192.png",
