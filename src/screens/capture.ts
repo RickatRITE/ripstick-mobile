@@ -83,8 +83,8 @@ export function renderCapture(app: HTMLElement): void {
           <button class="header-icon-btn ${state.optionsPanelOpen ? 'active' : ''}" id="options-toggle-btn" title="Options">
             <span class="icon-label">${state.optionsPanelOpen ? '&#9650;' : '&#9881;'}</span>
           </button>
-          <button class="save-btn-pill" id="save-btn" ${state.saving ? 'disabled' : ''}>
-            ${state.saving ? 'Saving...' : 'Save'}
+          <button class="header-icon-btn save-icon-btn" id="save-btn" ${state.saving ? 'disabled' : ''} title="Save note">
+            <span class="icon-label">${state.saving ? '...' : '&#10003;'}</span>
           </button>
         </div>
       </div>
