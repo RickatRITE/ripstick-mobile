@@ -4,7 +4,7 @@ import { getToken } from '../auth';
 import { getAllFiles, getFileContent } from '../api';
 import { parseNote } from '../frontmatter';
 import { state, render, navigate, disconnect, type NoteListItem } from '../state';
-import { escapeHtml, formatDate, NO_DATE } from '../utils';
+import { escapeHtml, formatDate, NO_DATE, syncDotHtml } from '../utils';
 
 /** Render a single note list item in Gmail style. */
 function noteItemHtml(n: NoteListItem): string {
@@ -22,12 +22,6 @@ function noteItemHtml(n: NoteListItem): string {
       ${snippet ? `<div class="gmail-item-snippet">${snippet}</div>` : ''}
     </button>
   `;
-}
-
-function syncDotHtml(): string {
-  const { syncHealth } = state;
-  const cls = syncHealth === 'syncing' ? 'sync-dot sync-dot--syncing' : `sync-dot sync-dot--${syncHealth}`;
-  return `<span class="${cls}" id="sync-dot" title="Sync status"></span>`;
 }
 
 export function renderRecent(app: HTMLElement): void {
@@ -50,7 +44,7 @@ export function renderRecent(app: HTMLElement): void {
           <div class="options-section" style="align-items:flex-start">
             <span class="settings-link" id="signout-btn">Sign out</span>
           </div>
-          <div style="font-size:var(--font-xs);color:var(--fg-muted);text-align:center">v27</div>
+          <div style="font-size:var(--font-xs);color:var(--fg-muted);text-align:center">v28</div>
         </div>
       ` : ''}
 

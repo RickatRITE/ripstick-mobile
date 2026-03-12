@@ -6,18 +6,10 @@ import { buildFrontmatter, generateFilename, buildCommitMessage, MARKERS, MARKER
 import { enqueue, saveDraft, clearDraft } from '../outbox';
 import { flushOutbox } from '../sync';
 import { state, render, navigate, disconnect, LAST_GROUP_KEY } from '../state';
-import { escapeHtml } from '../utils';
+import { escapeHtml, syncDotHtml } from '../utils';
 import { loadRecentNotes } from './recent';
 
 let _draftTimer: ReturnType<typeof setTimeout> | null = null;
-
-// ── Sync Dot HTML ────────────────────────────────────────────────────
-
-function syncDotHtml(): string {
-  const { syncHealth } = state;
-  const cls = syncHealth === 'syncing' ? 'sync-dot sync-dot--syncing' : `sync-dot sync-dot--${syncHealth}`;
-  return `<span class="${cls}" id="sync-dot" title="Sync status"></span>`;
-}
 
 // ── Toast HTML ───────────────────────────────────────────────────────
 
@@ -91,8 +83,8 @@ export function renderCapture(app: HTMLElement): void {
           <button class="header-icon-btn ${state.optionsPanelOpen ? 'active' : ''}" id="options-toggle-btn" title="Options">
             <span class="icon-label">${state.optionsPanelOpen ? '&#9650;' : '&#9881;'}</span>
           </button>
-          <button class="header-icon-btn save-icon-btn" id="save-btn" ${state.saving ? 'disabled' : ''} title="Save note">
-            <span class="icon-label">${state.saving ? '...' : '&#10003;'}</span>
+          <button class="save-btn-pill" id="save-btn" ${state.saving ? 'disabled' : ''}>
+            ${state.saving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>

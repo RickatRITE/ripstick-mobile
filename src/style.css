@@ -118,20 +118,33 @@ body {
   line-height: 1;
 }
 
-.save-icon-btn {
-  border: 2px solid var(--accent);
-  color: var(--accent);
-  font-weight: 700;
-}
+/* ── Save Pill Button ────────────────────────────────────────── */
 
-.save-icon-btn:active {
+.save-btn-pill {
+  padding: 6px 14px;
+  border-radius: 16px;
   background: var(--accent);
   color: var(--fg-on-accent);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
 }
 
-.save-icon-btn:disabled {
-  opacity: 0.4;
+.save-btn-pill:active {
+  background: var(--accent-hover);
+}
+
+.save-btn-pill:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.save-btn-pill--saved {
+  background: var(--success);
 }
 
 /* ── Options Summary (collapsed state) ────────────────────────── */

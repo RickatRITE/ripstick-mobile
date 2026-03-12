@@ -54,6 +54,13 @@ export function statusHtml(): string {
   return html;
 }
 
+/** Sync-health indicator dot (used in capture + recent tab bars). */
+export function syncDotHtml(): string {
+  const { syncHealth } = state;
+  const cls = syncHealth === 'syncing' ? 'sync-dot sync-dot--syncing' : `sync-dot sync-dot--${syncHealth}`;
+  return `<span class="${cls}" id="sync-dot" title="Sync status"></span>`;
+}
+
 export function clearStatusAfterDelay(ms = 2000): void {
   setTimeout(() => {
     if (state.status?.type === 'success') {

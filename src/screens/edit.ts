@@ -98,8 +98,8 @@ export function renderEdit(app: HTMLElement): void {
           <button class="header-icon-btn ${state.editOptionsPanelOpen ? 'active' : ''}" id="options-toggle-btn" title="Options">
             <span class="icon-label">${state.editOptionsPanelOpen ? '&#9650;' : '&#9881;'}</span>
           </button>
-          <button class="header-icon-btn save-icon-btn" id="save-edit-btn" ${state.editSaving ? 'disabled' : ''} title="Save note">
-            <span class="icon-label">${state.editSaving ? '...' : '&#10003;'}</span>
+          <button class="save-btn-pill" id="save-edit-btn" ${state.editSaving ? 'disabled' : ''}>
+            ${state.editSaving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
