@@ -96,7 +96,7 @@ export function renderCapture(app: HTMLElement): void {
         </div>
       </div>
 
-      ${summary && !state.optionsPanelOpen ? `<div class="options-summary" id="options-summary">${escapeHtml(summary)}</div>` : ''}
+      ${summary && !state.optionsPanelOpen ? `<div class="options-summary" id="options-summary">${escapeHtml(summary)} ▾</div>` : ''}
 
       ${optionsPanelHtml()}
 

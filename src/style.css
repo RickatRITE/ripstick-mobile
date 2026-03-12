@@ -89,8 +89,8 @@ body {
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--bg-card);
-  color: var(--fg-muted);
-  font-size: 16px;
+  color: #aaa;
+  font-size: 17px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: all 0.15s;
@@ -129,9 +129,9 @@ body {
 /* ── Options Summary (collapsed state) ────────────────────────── */
 
 .options-summary {
-  font-size: 12px;
+  font-size: var(--font-sm);
   color: var(--fg-muted);
-  padding: 4px 0 4px;
+  padding: 6px 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -314,9 +314,9 @@ textarea {
 }
 
 .marker-chip {
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: var(--font-sm);
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--fg);
@@ -590,9 +590,9 @@ textarea {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  border: 1px dashed var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: transparent;
+  background: var(--bg-card);
   color: var(--fg-muted);
   font-size: var(--font-sm);
   cursor: pointer;
@@ -612,8 +612,8 @@ textarea {
 
 .sync-dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;

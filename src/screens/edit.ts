@@ -104,7 +104,7 @@ export function renderEdit(app: HTMLElement): void {
         </div>
       </div>
 
-      ${summary && !state.editOptionsPanelOpen ? `<div class="options-summary" id="options-summary">${escapeHtml(summary)}</div>` : ''}
+      ${summary && !state.editOptionsPanelOpen ? `<div class="options-summary" id="options-summary">${escapeHtml(summary)} ▾</div>` : ''}
 
       ${optionsPanelHtml()}
 
@@ -210,7 +210,8 @@ async function saveEditMutation(
   if (state.status?.type === 'success') clearStatusAfterDelay();
 }
 
-async function handleSaveEdit(): Promise<void> {
+/** @internal — exported for regression test (BUG-47) */
+export async function handleSaveEdit(): Promise<void> {
   await saveEditMutation((note) => {
     let markdown = getMarkdown();
     if (note.parsed.marker && note.parsed.markerLine) {
