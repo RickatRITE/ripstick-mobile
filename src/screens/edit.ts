@@ -183,12 +183,15 @@ async function saveEditMutation(
   const token = getToken();
   if (!token) return;
 
+  // Build the content BEFORE render() — render() destroys the TipTap editor
+  // and recreates it with the original body, so getMarkdown() must run first.
+  const { content, commitMessage, successMessage } = prepare(state.editNote, token);
+
   state.editSaving = true;
   state.status = { type: 'info', message: 'Saving...' };
   render();
 
   try {
-    const { content, commitMessage, successMessage } = prepare(state.editNote, token);
     await updateFile(token, state.repo, state.editNote.path, content, state.editNote.sha, commitMessage);
 
     const updated = await getFileContent(token, state.repo, state.editNote.path);
