@@ -24,19 +24,35 @@ function noteItemHtml(n: NoteListItem): string {
   `;
 }
 
+function syncDotHtml(): string {
+  const { syncHealth } = state;
+  const cls = syncHealth === 'syncing' ? 'sync-dot sync-dot--syncing' : `sync-dot sync-dot--${syncHealth}`;
+  return `<span class="${cls}" id="sync-dot" title="Sync status"></span>`;
+}
+
 export function renderRecent(app: HTMLElement): void {
   app.innerHTML = `
     <div class="capture-screen">
       <div class="header">
         <div class="tab-bar">
           <span class="tab" id="tab-new">New</span>
-          <span class="tab active">Recent</span>
+          <span class="tab active">Recent ${syncDotHtml()}</span>
         </div>
         <div class="header-actions">
-          <span style="font-size:10px;color:var(--fg-muted)">v26</span>
-          <span class="settings-link" id="signout-btn">Sign out</span>
+          <button class="header-icon-btn ${state.optionsPanelOpen ? 'active' : ''}" id="options-toggle-btn" title="Options">
+            <span class="icon-label">${state.optionsPanelOpen ? '&#9650;' : '&#9881;'}</span>
+          </button>
         </div>
       </div>
+
+      ${state.optionsPanelOpen ? `
+        <div class="options-panel" id="options-panel">
+          <div class="options-section" style="align-items:flex-start">
+            <span class="settings-link" id="signout-btn">Sign out</span>
+          </div>
+          <div style="font-size:var(--font-xs);color:var(--fg-muted);text-align:center">v27</div>
+        </div>
+      ` : ''}
 
       ${state.recentLoading ? `
         <div class="loading-indicator">Loading notes...</div>
@@ -51,9 +67,24 @@ export function renderRecent(app: HTMLElement): void {
 
   document.getElementById('tab-new')?.addEventListener('click', () => {
     state.status = null;
+    state.optionsPanelOpen = false;
     navigate('capture');
   });
+
+  // Gear toggle
+  document.getElementById('options-toggle-btn')?.addEventListener('click', () => {
+    state.optionsPanelOpen = !state.optionsPanelOpen;
+    render();
+  });
+
+  // Sign out (inside options panel)
   document.getElementById('signout-btn')?.addEventListener('click', () => disconnect());
+
+  // Sync dot → open outbox view
+  document.getElementById('sync-dot')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    navigate('outbox');
+  });
 
   document.querySelectorAll('.gmail-item').forEach((el) => {
     el.addEventListener('click', () => {

@@ -68,6 +68,9 @@ function optionsPanelHtml(): string {
         </button>
         <input type="file" accept="image/*" id="image-file-input" style="display:none" />
       </div>
+      <div class="options-section options-footer">
+        <span class="settings-link" id="signout-btn">Sign out</span>
+      </div>
     </div>
   `;
 }
@@ -82,17 +85,15 @@ export function renderCapture(app: HTMLElement): void {
       <div class="header">
         <div class="tab-bar">
           <span class="tab active">New</span>
-          <span class="tab" id="tab-recent">Recent</span>
+          <span class="tab" id="tab-recent">Recent ${syncDotHtml()}</span>
         </div>
         <div class="header-actions">
           <button class="header-icon-btn ${state.optionsPanelOpen ? 'active' : ''}" id="options-toggle-btn" title="Options">
-            <span class="icon-label">&#9881;</span>
+            <span class="icon-label">${state.optionsPanelOpen ? '&#9650;' : '&#9881;'}</span>
           </button>
           <button class="header-icon-btn save-icon-btn" id="save-btn" ${state.saving ? 'disabled' : ''} title="Save note">
             <span class="icon-label">${state.saving ? '...' : '&#10003;'}</span>
           </button>
-          ${syncDotHtml()}
-          <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
 
@@ -120,13 +121,17 @@ export function renderCapture(app: HTMLElement): void {
 function bindCaptureEvents(): void {
   document.getElementById('tab-recent')?.addEventListener('click', () => {
     state.status = null;
+    state.optionsPanelOpen = false;
     navigate('recent');
     loadRecentNotes();
   });
+
+  // Sign out (inside options panel)
   document.getElementById('signout-btn')?.addEventListener('click', () => disconnect());
 
-  // Sync dot → open outbox view
-  document.getElementById('sync-dot')?.addEventListener('click', () => {
+  // Sync dot → open outbox view (stop propagation so tab click doesn't fire)
+  document.getElementById('sync-dot')?.addEventListener('click', (e) => {
+    e.stopPropagation();
     navigate('outbox');
   });
 

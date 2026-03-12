@@ -16,6 +16,7 @@
   --success: #4caf50;
   --error: #f44336;
   --amber: #f5a623;
+  --fg-secondary: #aaa;
   --fg-on-accent: #fff;
   --shadow: 0 4px 12px rgba(0,0,0,0.3);
   --radius: 8px;
@@ -78,6 +79,13 @@ body {
   gap: 10px;
 }
 
+/* ── Sync dot inside tab bar ──────────────────────────────────── */
+
+.tab .sync-dot {
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
 /* ── Header Icon Buttons ──────────────────────────────────────── */
 
 .header-icon-btn {
@@ -89,7 +97,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--bg-card);
-  color: #aaa;
+  color: var(--fg-secondary);
   font-size: 17px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -111,15 +119,14 @@ body {
 }
 
 .save-icon-btn {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--fg-on-accent);
+  border: 2px solid var(--accent);
+  color: var(--accent);
   font-weight: 700;
 }
 
 .save-icon-btn:active {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  background: var(--accent);
+  color: var(--fg-on-accent);
 }
 
 .save-icon-btn:disabled {
@@ -166,6 +173,12 @@ body {
   color: var(--fg-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.options-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  align-items: flex-start;
 }
 
 /* ── Buttons ───────────────────────────────────────────────────── */
