@@ -22,6 +22,7 @@ function headers(token: string): Record<string, string> {
 export async function listGroups(token: string, repo: string): Promise<string[]> {
   const res = await fetch(`${GITHUB_API}/repos/${repo}/contents/`, {
     headers: headers(token),
+    cache: 'no-store',
   });
   if (!res.ok) throw new Error(`List groups: ${res.status}`);
   const items = (await res.json()) as Array<{ name: string; type: string }>;
@@ -34,6 +35,7 @@ export async function listGroups(token: string, repo: string): Promise<string[]>
 export async function listFiles(token: string, repo: string, group: string): Promise<string[]> {
   const res = await fetch(`${GITHUB_API}/repos/${repo}/contents/${encodeURIComponent(group)}`, {
     headers: headers(token),
+    cache: 'no-store',
   });
   if (!res.ok) return [];
   const items = (await res.json()) as Array<{ name: string; type: string }>;
@@ -52,12 +54,14 @@ export async function getAllFiles(token: string, repo: string): Promise<FileEntr
   // Try main first, fall back to master — cache which branch works
   let res = await fetch(`${GITHUB_API}/repos/${repo}/git/trees/main?recursive=1`, {
     headers: headers(token),
+    cache: 'no-store',
   });
   if (res.ok) {
     _defaultBranch = 'main';
   } else {
     res = await fetch(`${GITHUB_API}/repos/${repo}/git/trees/master?recursive=1`, {
       headers: headers(token),
+      cache: 'no-store',
     });
     if (res.ok) _defaultBranch = 'master';
   }
@@ -75,6 +79,7 @@ export interface FileContent {
 export async function getFileContent(token: string, repo: string, path: string): Promise<FileContent> {
   const res = await fetch(`${GITHUB_API}/repos/${repo}/contents/${encodeURIComponent(path)}`, {
     headers: headers(token),
+    cache: 'no-store',
   });
   if (!res.ok) throw new Error(`Get file: ${res.status}`);
   const data = (await res.json()) as { content: string; sha: string };
