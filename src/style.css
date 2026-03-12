@@ -112,13 +112,14 @@ body {
 
 .save-icon-btn {
   border-color: var(--accent);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--fg-on-accent);
   font-weight: 700;
 }
 
 .save-icon-btn:active {
-  background: var(--accent);
-  color: var(--fg-on-accent);
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .save-icon-btn:disabled {

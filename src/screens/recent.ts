@@ -33,7 +33,7 @@ export function renderRecent(app: HTMLElement): void {
           <span class="tab active">Recent</span>
         </div>
         <div class="header-actions">
-          <span style="font-size:10px;color:var(--fg-muted)">v25</span>
+          <span style="font-size:10px;color:var(--fg-muted)">v26</span>
           <span class="settings-link" id="signout-btn">Sign out</span>
         </div>
       </div>
