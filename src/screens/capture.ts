@@ -106,6 +106,9 @@ export function renderCapture(app: HTMLElement): void {
   `;
 
   bindCaptureEvents();
+
+  // Auto-focus the body textarea so the keyboard appears immediately for quick capture
+  document.getElementById('body-input')?.focus();
 }
 
 // ── Events ───────────────────────────────────────────────────────────

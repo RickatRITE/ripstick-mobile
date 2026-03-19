@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ripstick-v31';
+const CACHE_NAME = 'ripstick-v0.0032';
 // Must match SHARE_CACHE in src/share-target.ts
 const SHARE_CACHE = 'ripstick-share-temp';
 
