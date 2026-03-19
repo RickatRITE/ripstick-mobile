@@ -42,6 +42,7 @@ export function createEditor(element: HTMLElement, content: string, options?: Mo
     element,
     content,
     extensions: getBaseExtensions(),
+    autofocus: 'end',
     editorProps: {
       attributes: {
         class: 'tiptap-editor',
