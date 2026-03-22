@@ -15,6 +15,8 @@ import { renderRecent } from './screens/recent';
 import { renderEdit } from './screens/edit';
 import { renderOutbox } from './screens/outbox';
 import { renderChat } from './screens/chat';
+import { renderActivity } from './screens/activity';
+import { renderSearch } from './screens/search';
 import { configureRelay, connectRelay, onRelay } from './relay';
 import './style.css';
 
@@ -31,7 +33,9 @@ function renderScreen(): void {
     case 'recent':  renderRecent(app); break;
     case 'edit':    renderEdit(app); break;
     case 'outbox':  renderOutbox(app); break;
-    case 'chat':    renderChat(app); break;
+    case 'chat':     renderChat(app); break;
+    case 'activity': renderActivity(app); break;
+    case 'search':   renderSearch(app); break;
   }
 }
 

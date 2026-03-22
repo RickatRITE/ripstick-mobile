@@ -1,7 +1,9 @@
-/** Chat screen — real-time message stream via relay server. */
+/** Chat screen — real-time message stream via relay server.
+ * Supports public channels (groups) and DMs (from workspace manifest).
+ */
 
 import { state, render } from '../state';
-import { chatMessages, sendChat, isRelayConnected, type ChatMessage } from '../relay';
+import { chatMessages, sendChat, isRelayConnected, dmSummaries, memberPresence, type ChatMessage } from '../relay';
 
 /** Render the chat screen. */
 export function renderChat(app: HTMLElement): void {
@@ -10,6 +12,9 @@ export function renderChat(app: HTMLElement): void {
   const messages = chatMessages.get(channel) || [];
   const connected = isRelayConnected();
 
+  // DM summaries for sidebar
+  const dms = dmSummaries || [];
+
   app.innerHTML = `
     <div class="chat-screen">
       <header class="chat-header">
@@ -17,6 +22,22 @@ export function renderChat(app: HTMLElement): void {
         <span class="chat-channel-name">#${escapeHtml(group)}</span>
         ${!connected ? '<span class="chat-offline">offline</span>' : ''}
       </header>
+
+      ${dms.length > 0 ? `
+        <div class="dm-sidebar-mobile">
+          <div class="dm-sidebar-header">Direct Messages</div>
+          ${dms.map(dm => {
+            const online = dm.participants.some(p => memberPresence[p]?.status === 'online');
+            return `
+              <button class="dm-sidebar-item ${dm.unread_count > 0 ? 'unread' : ''}" data-dm="${dm.repo_name}">
+                <span class="dm-dot ${online ? 'online' : ''}"></span>
+                <span class="dm-name">${escapeHtml(dm.participants.join(', '))}</span>
+                ${dm.unread_count > 0 ? `<span class="dm-badge">${dm.unread_count}</span>` : ''}
+              </button>
+            `;
+          }).join('')}
+        </div>
+      ` : ''}
 
       <div class="chat-messages" id="chat-messages">
         ${messages.length === 0
@@ -50,6 +71,15 @@ export function renderChat(app: HTMLElement): void {
   document.getElementById('chat-back')?.addEventListener('click', () => {
     state.screen = 'recent' as any;
     render();
+  });
+
+  // DM item clicks
+  document.querySelectorAll('.dm-sidebar-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const repoName = (el as HTMLElement).dataset.dm!;
+      state.selectedGroup = repoName;
+      renderChat(app);
+    });
   });
 
   // Input: Enter to send, Shift+Enter for newline

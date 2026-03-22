@@ -15,7 +15,7 @@ export const CACHED_USERNAME_KEY = 'ripstick-cached-username';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
-export type Screen = 'auth' | 'capture' | 'recent' | 'edit' | 'outbox' | 'chat';
+export type Screen = 'auth' | 'capture' | 'recent' | 'edit' | 'outbox' | 'chat' | 'activity' | 'search';
 
 export type SyncHealth = 'green' | 'amber' | 'syncing' | 'red';
 

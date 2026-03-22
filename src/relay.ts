@@ -17,6 +17,9 @@ import type {
   ServerMessage,
   RelayChatBroadcast,
   ChatMessagePayload,
+  DmSummary,
+  RepoEntry,
+  MemberPresence,
 } from '../../shared/relay';
 
 // ── State ──────────────────────────────────────────────────────────────
@@ -33,9 +36,17 @@ let connected = false;
 /** Chat messages received from the relay, keyed by channel. */
 export const chatMessages: Map<string, ChatMessage[]> = new Map();
 
+/** Workspace manifest data (repos + DMs). */
+export let workspaceRepos: RepoEntry[] = [];
+export let dmSummaries: DmSummary[] = [];
+
+/** Member presence (online/idle/offline). */
+export let memberPresence: Record<string, MemberPresence> = {};
+
 /** Callbacks for UI updates. */
 let onChatMessage: ((channel: string, msg: ChatMessage) => void) | null = null;
 let onConnectionChange: ((connected: boolean) => void) | null = null;
+let onManifestUpdate: (() => void) | null = null;
 
 export interface ChatMessage {
   uuid: string;
@@ -141,13 +152,39 @@ export function sendChat(repo: string, group: string, body: string): void {
   }));
 }
 
+/** Send an AI request via the relay server. Returns request_id for tracking. */
+export function sendAiRequest(prompt: string, context?: string, model?: string): string {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return '';
+
+  const requestId = crypto.randomUUID();
+  ws.send(JSON.stringify({
+    type: 'ai_request',
+    v: RELAY_PROTOCOL_VERSION,
+    request_id: requestId,
+    prompt,
+    context,
+    model,
+  }));
+  return requestId;
+}
+
+/** AI response callbacks, keyed by request_id. */
+const aiCallbacks = new Map<string, (delta: string, done: boolean) => void>();
+
+/** Register a callback for AI response streaming. */
+export function onAiResponse(requestId: string, cb: (delta: string, done: boolean) => void): void {
+  aiCallbacks.set(requestId, cb);
+}
+
 /** Register callbacks for UI updates. */
 export function onRelay(handlers: {
   onChat?: (channel: string, msg: ChatMessage) => void;
   onConnection?: (connected: boolean) => void;
+  onManifest?: () => void;
 }): void {
   onChatMessage = handlers.onChat || null;
   onConnectionChange = handlers.onConnection || null;
+  onManifestUpdate = handlers.onManifest || null;
 }
 
 /** Whether the relay is currently connected. */
@@ -193,6 +230,44 @@ function handleMessage(msg: ServerMessage): void {
 
     case 'sync':
       // Another client pushed — could trigger a git sync on mobile
+      break;
+
+    case 'workspace_manifest': {
+      const wm = msg as any;
+      workspaceRepos = wm.repos || [];
+      dmSummaries = wm.dm_summaries || [];
+      onManifestUpdate?.();
+      break;
+    }
+
+    case 'presence_summary': {
+      const ps = msg as any;
+      memberPresence = ps.members || {};
+      break;
+    }
+
+    case 'mention_notify': {
+      // Could trigger a push notification or badge update
+      break;
+    }
+
+    case 'ai_response': {
+      const ar = msg as any;
+      const cb = aiCallbacks.get(ar.request_id);
+      if (cb) {
+        cb(ar.delta, ar.done);
+        if (ar.done) aiCallbacks.delete(ar.request_id);
+      }
+      break;
+    }
+
+    case 'mutation_broadcast':
+    case 'channel_state':
+    case 'cursor_sync':
+    case 'cursor_update':
+    case 'channel_create_ack':
+    case 'dm_repo_error':
+    case 'recovery_mode':
       break;
 
     default:
