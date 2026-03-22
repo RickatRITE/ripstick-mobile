@@ -31,6 +31,7 @@ export function renderRecent(app: HTMLElement): void {
         <div class="tab-bar">
           <span class="tab" id="tab-new">New</span>
           <span class="tab active">Recent ${syncDotHtml()}</span>
+          <span class="tab" id="tab-chat">Chat</span>
         </div>
         <div class="header-actions">
           <button class="header-icon-btn ${state.optionsPanelOpen ? 'active' : ''}" id="options-toggle-btn" title="Options">
@@ -63,6 +64,11 @@ export function renderRecent(app: HTMLElement): void {
     state.status = null;
     state.optionsPanelOpen = false;
     navigate('capture');
+  });
+
+  document.getElementById('tab-chat')?.addEventListener('click', () => {
+    state.optionsPanelOpen = false;
+    navigate('chat');
   });
 
   // Gear toggle

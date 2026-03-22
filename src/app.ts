@@ -14,6 +14,8 @@ import { renderCapture } from './screens/capture';
 import { renderRecent } from './screens/recent';
 import { renderEdit } from './screens/edit';
 import { renderOutbox } from './screens/outbox';
+import { renderChat } from './screens/chat';
+import { configureRelay, connectRelay, onRelay } from './relay';
 import './style.css';
 
 // ── Render Dispatcher ─────────────────────────────────────────────────
@@ -29,6 +31,7 @@ function renderScreen(): void {
     case 'recent':  renderRecent(app); break;
     case 'edit':    renderEdit(app); break;
     case 'outbox':  renderOutbox(app); break;
+    case 'chat':    renderChat(app); break;
   }
 }
 
@@ -124,6 +127,21 @@ async function init(): Promise<void> {
 
       // Auth validated + online — flush any queued notes
       flushOutbox().catch(() => {});
+
+      // Initialize relay connection if configured
+      // TODO: Read relay_url from app settings. For now, check localStorage.
+      const relayUrl = localStorage.getItem('ripstick-relay-url');
+      const wsId = localStorage.getItem('ripstick-workspace-id');
+      if (relayUrl && wsId) {
+        configureRelay(relayUrl, wsId, username);
+        connectRelay();
+        onRelay({
+          onChat: () => {
+            // Re-render chat screen if active
+            if (state.screen === 'chat') render();
+          },
+        });
+      }
     } catch (e: any) {
       // Only bounce to auth on explicit auth rejection (401/403)
       // Network errors → keep the capture screen with cached credentials
