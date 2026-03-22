@@ -86,3 +86,69 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// ── Push Notifications ──────────────────────────────────────────────
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    data = { title: 'RipStick', body: event.data.text() };
+  }
+
+  const title = data.title || 'RipStick';
+  const options = {
+    body: data.body || '',
+    icon: '/ripstick-mobile/icon-192.png',
+    badge: '/ripstick-mobile/icon-192.png',
+    tag: data.tag || 'ripstick-notification',
+    data: {
+      url: data.url || '/ripstick-mobile/',
+      channel: data.channel,
+      message_uuid: data.message_uuid,
+    },
+    vibrate: [100, 50, 100],
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const url = event.notification.data?.url || '/ripstick-mobile/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url.includes('ripstick-mobile')) {
+          client.focus();
+          client.postMessage({
+            type: 'notification-click',
+            channel: event.notification.data?.channel,
+            message_uuid: event.notification.data?.message_uuid,
+          });
+          return;
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
+
+// ── Background Sync — drain pending chat messages on reconnect ──────
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'ripstick-chat-sync') {
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window' }).then((clients) => {
+        for (const client of clients) {
+          client.postMessage({ type: 'drain-pending' });
+        }
+      })
+    );
+  }
+});
