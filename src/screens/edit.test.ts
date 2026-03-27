@@ -29,7 +29,7 @@ vi.mock('../auth', () => ({
 
 vi.mock('../api', () => ({
   getDefaultBranch: () => 'main',
-  updateFile: vi.fn(async () => {}),
+  updateFile: vi.fn(async () => ({ sha: 'new-sha-from-update' })),
   getFileContent: vi.fn(async () => ({
     content: '---\ntitle: "Test"\ncreated: "2026-03-11"\nupdated: "2026-03-11"\ntags: []\n---\nEdited body',
     sha: 'new-sha',
@@ -84,6 +84,10 @@ vi.mock('../frontmatter', () => ({
 vi.mock('../utils', () => ({
   escapeHtml: (s: string) => s,
   clearStatusAfterDelay: vi.fn(),
+}));
+
+vi.mock('../log', () => ({
+  log: vi.fn(),
 }));
 
 // ── Tests ────────────────────────────────────────────────────────────

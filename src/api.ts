@@ -1,5 +1,7 @@
 /** GitHub Contents API wrapper for RipStick mobile. */
 
+import { log } from './log';
+
 const GITHUB_API = 'https://api.github.com';
 
 /** Cached default branch — detected by getAllFiles, used for raw content URLs. */
@@ -81,10 +83,14 @@ export async function getFileContent(token: string, repo: string, path: string):
     headers: headers(token),
     cache: 'no-store',
   });
-  if (!res.ok) throw new Error(`Get file: ${res.status}`);
+  if (!res.ok) {
+    log('api:getFileContent:error', { path, status: res.status });
+    throw new Error(`Get file: ${res.status}`);
+  }
   const data = (await res.json()) as { content: string; sha: string };
   // GitHub returns base64-encoded content
   const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+  log('api:getFileContent', { path, sha: data.sha.slice(0, 8) });
   return { content, sha: data.sha };
 }
 
@@ -145,7 +151,16 @@ export async function uploadAsset(
   }
 }
 
-/** Update an existing file via PUT /contents/{path} (requires SHA). */
+/**
+ * Update an existing file via PUT /contents/{path} (requires SHA).
+ *
+ * On 409 (SHA mismatch), automatically re-fetches the current SHA from
+ * GitHub and retries once. This handles the common case where the desktop
+ * app pushed a new commit while the mobile editor was open.
+ *
+ * Returns the new SHA after a successful write so the caller can update
+ * its cached state.
+ */
 export async function updateFile(
   token: string,
   repo: string,
@@ -153,8 +168,10 @@ export async function updateFile(
   content: string,
   sha: string,
   commitMessage: string,
-): Promise<void> {
+): Promise<{ sha: string }> {
   const encodedContent = btoa(unescape(encodeURIComponent(content)));
+
+  log('api:updateFile', { path, sha: sha.slice(0, 8) });
 
   const res = await fetch(`${GITHUB_API}/repos/${repo}/contents/${encodeURIComponent(path)}`, {
     method: 'PUT',
@@ -166,8 +183,43 @@ export async function updateFile(
     }),
   });
 
+  if (res.status === 409) {
+    // SHA mismatch — file was modified externally (desktop auto-save, another device).
+    // Re-fetch current SHA and retry once. The user's content wins — the overwritten
+    // version is preserved in git history.
+    log('api:updateFile:409-retry', { path, staleSha: sha.slice(0, 8) });
+
+    const fresh = await getFileContent(token, repo, path);
+    log('api:updateFile:409-freshSha', { path, freshSha: fresh.sha.slice(0, 8) });
+
+    const retryRes = await fetch(`${GITHUB_API}/repos/${repo}/contents/${encodeURIComponent(path)}`, {
+      method: 'PUT',
+      headers: headers(token),
+      body: JSON.stringify({
+        message: commitMessage,
+        content: encodedContent,
+        sha: fresh.sha,
+      }),
+    });
+
+    if (!retryRes.ok) {
+      const body = await retryRes.text();
+      log('api:updateFile:retry-failed', { path, status: retryRes.status });
+      throw new Error(`Update failed (${retryRes.status}): ${body}`);
+    }
+
+    const retryData = (await retryRes.json()) as { content: { sha: string } };
+    log('api:updateFile:retry-ok', { path, newSha: retryData.content.sha.slice(0, 8) });
+    return { sha: retryData.content.sha };
+  }
+
   if (!res.ok) {
     const body = await res.text();
+    log('api:updateFile:error', { path, status: res.status });
     throw new Error(`Update failed (${res.status}): ${body}`);
   }
+
+  const data = (await res.json()) as { content: { sha: string } };
+  log('api:updateFile:ok', { path, newSha: data.content.sha.slice(0, 8) });
+  return { sha: data.content.sha };
 }

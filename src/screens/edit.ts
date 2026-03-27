@@ -7,6 +7,7 @@ import { parseNote, rebuildNote, setMarkerInRaw, toggleDoneInRaw } from '../fron
 import { createEditor, getMarkdown } from '../editor';
 import { state, render } from '../state';
 import { escapeHtml, clearStatusAfterDelay } from '../utils';
+import { log, flushLogsToGitHub } from '../log';
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -187,21 +188,30 @@ async function saveEditMutation(
   // and recreates it with the original body, so getMarkdown() must run first.
   const { content, commitMessage, successMessage } = prepare(state.editNote, token);
 
+  log('edit:save:start', { path: state.editNote.path, sha: state.editNote.sha.slice(0, 8) });
+
   state.editSaving = true;
   state.status = { type: 'info', message: 'Saving...' };
   render();
 
   try {
-    await updateFile(token, state.repo, state.editNote.path, content, state.editNote.sha, commitMessage);
+    // updateFile handles 409 (stale SHA) automatically — re-fetches and retries.
+    // It returns the new SHA from the successful write.
+    const result = await updateFile(token, state.repo, state.editNote.path, content, state.editNote.sha, commitMessage);
 
-    const updated = await getFileContent(token, state.repo, state.editNote.path);
-    state.editNote.raw = updated.content;
-    state.editNote.sha = updated.sha;
-    state.editNote.parsed = parseNote(updated.content);
+    // Update cached state with what we just saved — no extra fetch needed.
+    state.editNote.raw = content;
+    state.editNote.sha = result.sha;
+    state.editNote.parsed = parseNote(content);
     // Reset editTitle to track the freshly saved value
     state.editTitle = null;
     state.status = { type: 'success', message: successMessage };
+    log('edit:save:ok', { path: state.editNote.path, newSha: result.sha.slice(0, 8) });
+
+    // Piggyback log flush on the warm GitHub connection — fire-and-forget
+    flushLogsToGitHub(token, state.repo, state.username || 'unknown').catch(() => {});
   } catch (e) {
+    log('edit:save:error', { path: state.editNote?.path, error: String(e) });
     state.status = { type: 'error', message: `Save failed: ${e}` };
   }
 

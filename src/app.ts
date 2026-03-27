@@ -7,6 +7,7 @@ import { processImage } from './image-utils';
 import { loadDraft } from './outbox';
 import { parseShareTarget } from './share-target';
 import { flushOutbox, refreshSyncHealth } from './sync';
+import { log, flushLogsToGitHub } from './log';
 import { GROUP_DEFAULT } from '../../shared/constants';
 import { state, setRenderFn, render, navigate, CACHED_GROUPS_KEY, CACHED_USERNAME_KEY } from './state';
 import { renderAuth } from './screens/auth';
@@ -239,6 +240,50 @@ window.addEventListener('popstate', (e) => {
       history.replaceState({ screen: 'capture' }, '', '');
     }
   }
+});
+
+// ── Visibility Change — Refresh SHA on Resume ────────────────────────
+
+document.addEventListener('visibilitychange', async () => {
+  log('visibility', { state: document.visibilityState, screen: state.screen, hasEditNote: !!state.editNote });
+
+  if (document.visibilityState === 'hidden') {
+    // App being backgrounded — flush logs to GitHub while we still can.
+    // This is fire-and-forget: if it fails, logs persist in localStorage.
+    const token = getToken();
+    if (token && state.repo && state.username) {
+      flushLogsToGitHub(token, state.repo, state.username).catch(() => {});
+    }
+    return;
+  }
+
+  // visible — refresh edit note SHA and flush outbox
+
+  // If the user is on the edit screen with a loaded note, silently refresh
+  // the SHA so the next save doesn't 409. This covers the case where the
+  // desktop auto-saved while the mobile app was backgrounded.
+  if (state.screen === 'edit' && state.editNote) {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const { getFileContent } = await import('./api');
+      const { sha } = await getFileContent(token, state.repo, state.editNote.path);
+      if (sha !== state.editNote.sha) {
+        log('visibility:sha-refreshed', {
+          path: state.editNote.path,
+          oldSha: state.editNote.sha.slice(0, 8),
+          newSha: sha.slice(0, 8),
+        });
+        state.editNote.sha = sha;
+      }
+    } catch {
+      // Offline or network error — the 409 retry in updateFile will handle it
+    }
+  }
+
+  // Also flush any queued outbox entries
+  flushOutbox().catch(() => {});
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────
