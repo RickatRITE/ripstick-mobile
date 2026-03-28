@@ -6,6 +6,7 @@ export {
   type NoteFields,
   yamlQuote,
   buildFrontmatter,
+  generateId,
   generateFilename,
 } from '../../shared/note-format';
 
