@@ -17,6 +17,7 @@ export default defineConfig({
       // When Vite encounters bare imports from ../shared/, resolve them here
       '@tiptap': path.resolve(__dirname, 'node_modules/@tiptap'),
       'tiptap-markdown': path.resolve(__dirname, 'node_modules/tiptap-markdown'),
+      'ulid': path.resolve(__dirname, 'node_modules/ulid'),
     },
   },
   server: {

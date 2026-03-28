@@ -13,7 +13,8 @@
     "baseUrl": ".",
     "paths": {
       "@tiptap/*": ["node_modules/@tiptap/*"],
-      "tiptap-markdown": ["node_modules/tiptap-markdown"]
+      "tiptap-markdown": ["node_modules/tiptap-markdown"],
+      "ulid": ["node_modules/ulid"]
     }
   },
   "include": ["src", "../shared"],
